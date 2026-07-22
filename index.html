@@ -109,7 +109,7 @@
 
       <!-- Performance & Render Quality Scaling -->
       <section class="panel-section">
-        <div class="panel-title">Performance & Quality</div>
+        <div class="panel-title">Performance & Viewport Scaling</div>
         <select id="renderScaleSelect" class="metal-select" style="margin-bottom: 8px;">
           <option value="1.0">Ultra Quality (100% Native Resolution)</option>
           <option value="0.75" selected>High Performance (75% Res - Recommended)</option>
@@ -123,12 +123,20 @@
         <button class="metal-btn" id="btnRerender" style="width: 100%; margin-top: 4px;">↻ Re-render Scene</button>
       </section>
 
-      <!-- Terrain Procedural Sliders & Seed -->
+      <!-- Terrain Procedural Sliders, Seed & Mesh Quality -->
       <section class="panel-section">
-        <div class="panel-title">Fractal Terrain & Seed</div>
+        <div class="panel-title">Fractal Terrain & Mesh Quality</div>
+        <select id="terrainDomainSelect" class="metal-select" style="margin-bottom: 10px;">
+          <option value="0" selected>Bounded Island / Coast (Coastal Mode)</option>
+          <option value="1">Infinite Endless Mountain (Endless Mode)</option>
+        </select>
         <div style="display: flex; gap: 6px; margin-bottom: 10px;">
           <button class="metal-btn btn-primary" id="btnRandomSeed" style="flex: 1;">🎲 Random Seed</button>
           <input type="number" id="inputSeed" class="metal-input" value="1337">
+        </div>
+        <div class="control-row">
+          <div class="control-label"><span>Mesh Detail Quality</span><span class="val" id="valMeshQuality">1.00</span></div>
+          <input type="range" class="metal-range" id="meshQualitySlider" min="0.1" max="2.0" step="0.05" value="1.0">
         </div>
         <div class="control-row">
           <div class="control-label"><span>Height Scale</span><span class="val" id="valTerrainHeight">3.20</span></div>
@@ -170,12 +178,12 @@
       <section class="panel-section">
         <div class="panel-title">Atmosphere & Draw Distance</div>
         <div class="control-row">
-          <div class="control-label"><span>Draw Distance</span><span class="val" id="valDrawDistance">80</span></div>
-          <input type="range" class="metal-range" id="drawDistanceSlider" min="20" max="250" step="5" value="80">
+          <div class="control-label"><span>Draw Distance</span><span class="val" id="valDrawDistance">120</span></div>
+          <input type="range" class="metal-range" id="drawDistanceSlider" min="20" max="300" step="5" value="120">
         </div>
         <div class="control-row">
-          <div class="control-label"><span>Fog Haze Density</span><span class="val" id="valFogDensity">0.40</span></div>
-          <input type="range" class="metal-range" id="fogDensitySlider" min="0.0" max="1.0" step="0.02" value="0.4">
+          <div class="control-label"><span>Fog Haze Density</span><span class="val" id="valFogDensity">0.35</span></div>
+          <input type="range" class="metal-range" id="fogDensitySlider" min="0.0" max="1.0" step="0.02" value="0.35">
         </div>
       </section>
 

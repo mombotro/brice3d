@@ -1,6 +1,6 @@
 /**
  * KPT Bryce 1.0 WebGL2 Raymarching & Heightfield GLSL Shader Suite
- * Ultra-Optimized Texture-Backed Raymarching Engine with Draw Distance Control.
+ * Supports Bounded Island/Coast Mode & Infinite Endless Mountain Mode.
  */
 
 export const VERTEX_SHADER_SOURCE = `#version 300 es
@@ -46,9 +46,11 @@ uniform float u_waterLevel;
 uniform vec3 u_waterColor;
 uniform float u_waterReflectivity;
 
-// Terrain Uniforms
+// Terrain & Mesh Quality Uniforms
 uniform float u_terrainScale;
 uniform float u_terrainHeight;
+uniform float u_meshQuality;
+uniform int u_terrainDomainMode; // 0: Bounded Island/Coast, 1: Infinite Continent
 uniform int u_paletteMode;
 
 // Sphere Primitive Uniforms
@@ -61,14 +63,58 @@ uniform float u_sphereReflectivity;
 uniform int u_renderMode;
 uniform float u_scanlineY;
 
+float hash21(vec2 p) {
+    p = fract(p * vec2(234.34, 435.345));
+    p += dot(p, p + 34.23);
+    return fract(p.x * p.y);
+}
+
+float valueNoise2D(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    return mix(mix(hash21(i + vec2(0.0, 0.0)), hash21(i + vec2(1.0, 0.0)), u.x),
+               mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+
+// Terrain Height Function (Island vs Infinite)
 float getTerrainHeight(vec2 p) {
-    vec2 uv = p * 0.04 * u_terrainScale + 0.5;
-    if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) return 0.0;
-    return texture(u_heightmap, uv).r * u_terrainHeight;
+    if (u_terrainDomainMode == 0) { // Bounded Island / Coast Mode
+        vec2 uv = p * 0.04 * u_terrainScale + 0.5;
+        if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) return 0.0;
+
+        float baseH = texture(u_heightmap, uv).r;
+
+        // Smooth radial edge falloff so terrain slopes into the ocean
+        vec2 centerDist = (uv - 0.5) * 2.0;
+        float edgeDist = length(centerDist);
+        float edgeFalloff = smoothstep(0.98, 0.35, edgeDist);
+
+        float microDetail = 0.0;
+        if (u_meshQuality > 0.05) {
+            float n1 = valueNoise2D(p * 0.8) * 0.12;
+            float n2 = valueNoise2D(p * 3.5) * 0.04;
+            microDetail = (n1 + n2) * u_meshQuality;
+        }
+
+        return (baseH * edgeFalloff + microDetail * edgeFalloff) * u_terrainHeight;
+    } else { // Infinite Endless Continent Mode
+        vec2 uv = fract(p * 0.03 * u_terrainScale);
+        float baseH = texture(u_heightmap, uv).r;
+
+        float microDetail = 0.0;
+        if (u_meshQuality > 0.05) {
+            float n1 = valueNoise2D(p * 0.8) * 0.12;
+            float n2 = valueNoise2D(p * 3.5) * 0.04;
+            microDetail = (n1 + n2) * u_meshQuality;
+        }
+
+        return (baseH + microDetail) * u_terrainHeight;
+    }
 }
 
 vec3 getTerrainNormal(vec2 p) {
-    float eps = 0.04;
+    float eps = 0.03;
     float h = getTerrainHeight(p);
     float hx = getTerrainHeight(p + vec2(eps, 0.0));
     float hz = getTerrainHeight(p + vec2(0.0, eps));
@@ -79,7 +125,7 @@ bool raycastTerrain(vec3 ro, vec3 rd, int maxSteps, out float hitT, out vec3 hit
     float t = 0.5;
     float tMax = u_drawDistance;
 
-    for (int i = 0; i < 110; i++) {
+    for (int i = 0; i < 120; i++) {
         if (i >= maxSteps) break;
         vec3 p = ro + rd * t;
         float h = getTerrainHeight(p.xz);
@@ -101,8 +147,8 @@ bool raycastTerrain(vec3 ro, vec3 rd, int maxSteps, out float hitT, out vec3 hit
             return true;
         }
 
-        float diff = max(0.1, p.y - h);
-        t += max(0.08, diff * 0.35 + t * 0.015);
+        float diff = max(0.08, p.y - h);
+        t += max(0.08, diff * 0.35 + t * 0.012);
         if (t > tMax) break;
     }
     return false;

@@ -41,8 +41,8 @@ export class WebGLRenderer {
       skyColorHorizon: [0.8, 0.45, 0.35],
       skyColorZenith: [0.15, 0.25, 0.55],
 
-      drawDistance: 80.0,
-      fogDensity: 0.4,
+      drawDistance: 120.0,
+      fogDensity: 0.35,
       fogColor: [0.75, 0.55, 0.45],
 
       waterLevel: 0.6,
@@ -51,7 +51,9 @@ export class WebGLRenderer {
 
       terrainScale: 0.8,
       terrainHeight: 3.2,
-      octaves: 6,
+      octaves: 7,
+      meshQuality: 1.0,
+      terrainDomainMode: 0, // 0: Bounded Island/Coast, 1: Infinite Continent
       paletteMode: 0,
 
       showSphere: 1,
@@ -94,7 +96,7 @@ export class WebGLRenderer {
       'u_skyColorHorizon', 'u_skyColorZenith',
       'u_drawDistance', 'u_fogDensity', 'u_fogColor',
       'u_waterLevel', 'u_waterColor', 'u_waterReflectivity',
-      'u_terrainScale', 'u_terrainHeight', 'u_paletteMode',
+      'u_terrainScale', 'u_terrainHeight', 'u_meshQuality', 'u_terrainDomainMode', 'u_paletteMode',
       'u_showSphere', 'u_spherePos', 'u_sphereRadius', 'u_sphereReflectivity',
       'u_renderMode', 'u_scanlineY', 'u_heightmap'
     ];
@@ -140,7 +142,10 @@ export class WebGLRenderer {
 
   initHeightmapTexture() {
     const gl = this.gl;
-    const { data, size } = this.fractalGen.generateHeightmapTexture(512, this.state.octaves, 2.5, this.state.seed);
+    const texSize = this.state.meshQuality > 1.2 ? 1024 : 512;
+    const octs = Math.min(8, Math.max(4, Math.floor(this.state.octaves * this.state.meshQuality)));
+
+    const { data, size } = this.fractalGen.generateHeightmapTexture(texSize, octs, 2.5, this.state.seed);
 
     if (this.heightTexture) gl.deleteTexture(this.heightTexture);
 
@@ -148,8 +153,9 @@ export class WebGLRenderer {
     gl.bindTexture(gl.TEXTURE_2D, this.heightTexture);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, size, size, 0, gl.RGBA, gl.UNSIGNED_BYTE, data);
 
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const wrapMode = this.state.terrainDomainMode === 1 ? gl.REPEAT : gl.CLAMP_TO_EDGE;
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, wrapMode);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, wrapMode);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
   }
@@ -215,6 +221,8 @@ export class WebGLRenderer {
 
     gl.uniform1f(this.uniforms.u_terrainScale, s.terrainScale);
     gl.uniform1f(this.uniforms.u_terrainHeight, s.terrainHeight);
+    gl.uniform1f(this.uniforms.u_meshQuality, s.meshQuality);
+    gl.uniform1i(this.uniforms.u_terrainDomainMode, s.terrainDomainMode);
     gl.uniform1i(this.uniforms.u_paletteMode, s.paletteMode);
 
     gl.uniform1i(this.uniforms.u_showSphere, s.showSphere);

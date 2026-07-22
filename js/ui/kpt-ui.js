@@ -1,6 +1,6 @@
 /**
  * KPT Bryce 1.0 Tactile UI Manager
- * Handles 3D Trackballs, Color Combos, Sun Controls, Sphere Toggle, Seed Generation, Draw Distance, and Performance Scaling.
+ * Handles 3D Trackballs, Color Combos, Terrain Domain (Island vs Infinite), Seed Generation, Mesh Detail Quality, and Render Scaling.
  */
 
 export class KptUIManager {
@@ -92,6 +92,17 @@ export class KptUIManager {
   }
 
   initNewFeatures() {
+    // 0. Terrain Domain Mode (Island vs Infinite)
+    const terrainDomainSelect = document.getElementById('terrainDomainSelect');
+    if (terrainDomainSelect) {
+      terrainDomainSelect.addEventListener('change', (e) => {
+        const mode = parseInt(e.target.value);
+        this.renderer.state.terrainDomainMode = mode;
+        this.renderer.regenerateHeightmap();
+        if (this.onStateChange) this.onStateChange();
+      });
+    }
+
     // 1. Random Seed Controls
     const btnRandomSeed = document.getElementById('btnRandomSeed');
     const inputSeed = document.getElementById('inputSeed');
@@ -147,7 +158,7 @@ export class KptUIManager {
       });
     }
 
-    // 4. Draw Distance Slider
+    // 4. Draw Distance & Mesh Detail Quality Sliders
     const drawDistanceSlider = document.getElementById('drawDistanceSlider');
     const valDrawDistance = document.getElementById('valDrawDistance');
     if (drawDistanceSlider) {
@@ -155,6 +166,18 @@ export class KptUIManager {
         const val = parseFloat(e.target.value);
         this.renderer.state.drawDistance = val;
         if (valDrawDistance) valDrawDistance.textContent = val.toFixed(0);
+        if (this.onStateChange) this.onStateChange();
+      });
+    }
+
+    const meshQualitySlider = document.getElementById('meshQualitySlider');
+    const valMeshQuality = document.getElementById('valMeshQuality');
+    if (meshQualitySlider) {
+      meshQualitySlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        this.renderer.state.meshQuality = val;
+        if (valMeshQuality) valMeshQuality.textContent = val.toFixed(2);
+        this.renderer.regenerateHeightmap();
         if (this.onStateChange) this.onStateChange();
       });
     }
@@ -284,14 +307,16 @@ export class KptUIManager {
         sunSize: 1.0,
         skyColorHorizon: [0.9, 0.4, 0.35],
         skyColorZenith: [0.12, 0.18, 0.45],
-        drawDistance: 80.0,
-        fogDensity: 0.45,
+        drawDistance: 120.0,
+        fogDensity: 0.35,
         fogColor: [0.8, 0.5, 0.4],
         waterLevel: 0.6,
         waterColor: [0.05, 0.35, 0.45],
         waterReflectivity: 0.65,
         terrainScale: 0.8,
         terrainHeight: 3.2,
+        meshQuality: 1.0,
+        terrainDomainMode: 0,
         paletteMode: 0,
         showSphere: 1,
         spherePos: [1.2, 1.8, 2.0],
@@ -308,7 +333,7 @@ export class KptUIManager {
         sunSize: 0.8,
         skyColorHorizon: [0.5, 0.85, 0.9],
         skyColorZenith: [0.05, 0.45, 0.85],
-        drawDistance: 100.0,
+        drawDistance: 150.0,
         fogDensity: 0.25,
         fogColor: [0.45, 0.75, 0.7],
         waterLevel: 0.8,
@@ -316,6 +341,8 @@ export class KptUIManager {
         waterReflectivity: 0.8,
         terrainScale: 1.0,
         terrainHeight: 2.8,
+        meshQuality: 1.2,
+        terrainDomainMode: 0,
         paletteMode: 1,
         showSphere: 1,
         spherePos: [-0.5, 1.5, 1.0],
@@ -332,14 +359,16 @@ export class KptUIManager {
         sunSize: 1.5,
         skyColorHorizon: [0.65, 0.2, 0.6],
         skyColorZenith: [0.1, 0.05, 0.3],
-        drawDistance: 60.0,
-        fogDensity: 0.6,
+        drawDistance: 80.0,
+        fogDensity: 0.5,
         fogColor: [0.5, 0.2, 0.55],
         waterLevel: 0.5,
         waterColor: [0.3, 0.05, 0.4],
         waterReflectivity: 0.5,
         terrainScale: 0.7,
         terrainHeight: 4.0,
+        meshQuality: 1.5,
+        terrainDomainMode: 1,
         paletteMode: 2,
         showSphere: 1,
         spherePos: [0.0, 2.2, 0.0],
@@ -356,14 +385,16 @@ export class KptUIManager {
         sunSize: 1.2,
         skyColorHorizon: [0.95, 0.75, 0.5],
         skyColorZenith: [0.4, 0.25, 0.15],
-        drawDistance: 90.0,
-        fogDensity: 0.3,
+        drawDistance: 130.0,
+        fogDensity: 0.25,
         fogColor: [0.85, 0.65, 0.45],
         waterLevel: 0.4,
         waterColor: [0.4, 0.25, 0.1],
         waterReflectivity: 0.7,
         terrainScale: 0.9,
         terrainHeight: 3.5,
+        meshQuality: 1.0,
+        terrainDomainMode: 1,
         paletteMode: 3,
         showSphere: 0,
         spherePos: [2.0, 1.6, -1.0],
@@ -377,6 +408,7 @@ export class KptUIManager {
       if (presets[pKey]) {
         Object.assign(this.renderer.state, presets[pKey]);
         this.updateUIFromState();
+        this.renderer.regenerateHeightmap();
         if (this.onStateChange) this.onStateChange();
       }
     });
@@ -394,12 +426,16 @@ export class KptUIManager {
     updateVal('terrainHeightSlider', s.terrainHeight, 'valTerrainHeight');
     updateVal('terrainScaleSlider', s.terrainScale, 'valTerrainScale');
     updateVal('drawDistanceSlider', s.drawDistance, 'valDrawDistance');
+    updateVal('meshQualitySlider', s.meshQuality, 'valMeshQuality');
     updateVal('fogDensitySlider', s.fogDensity, 'valFogDensity');
     updateVal('waterLevelSlider', s.waterLevel, 'valWaterLevel');
     updateVal('waterReflectSlider', s.waterReflectivity, 'valWaterReflect');
     updateVal('sphereReflectSlider', s.sphereReflectivity, 'valSphereReflect');
     updateVal('sunIntensitySlider', s.sunIntensity, 'valSunIntensity');
     updateVal('sunSizeSlider', s.sunSize, 'valSunSize');
+
+    const terrainDomainSelect = document.getElementById('terrainDomainSelect');
+    if (terrainDomainSelect) terrainDomainSelect.value = s.terrainDomainMode;
 
     const chkShowSphere = document.getElementById('chkShowSphere');
     if (chkShowSphere) chkShowSphere.checked = s.showSphere === 1;
