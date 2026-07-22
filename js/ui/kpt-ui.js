@@ -1,6 +1,6 @@
 /**
  * KPT Bryce 1.0 Tactile UI Manager
- * Handles 3D Trackballs, Color Combos, Sun Controls, Sphere Toggle, Seed Generation, and Performance Scaling.
+ * Handles 3D Trackballs, Color Combos, Sun Controls, Sphere Toggle, Seed Generation, Draw Distance, and Performance Scaling.
  */
 
 export class KptUIManager {
@@ -147,7 +147,19 @@ export class KptUIManager {
       });
     }
 
-    // 4. Color Pickers (Sky Horizon, Zenith, Fog Haze, Sun Color, Water)
+    // 4. Draw Distance Slider
+    const drawDistanceSlider = document.getElementById('drawDistanceSlider');
+    const valDrawDistance = document.getElementById('valDrawDistance');
+    if (drawDistanceSlider) {
+      drawDistanceSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        this.renderer.state.drawDistance = val;
+        if (valDrawDistance) valDrawDistance.textContent = val.toFixed(0);
+        if (this.onStateChange) this.onStateChange();
+      });
+    }
+
+    // 5. Color Pickers (Sky Horizon, Zenith, Fog Haze, Sun Color, Water)
     const bindColorPicker = (id, stateKey) => {
       const picker = document.getElementById(id);
       if (!picker) return;
@@ -163,7 +175,7 @@ export class KptUIManager {
     bindColorPicker('pickerSunColor', 'sunColor');
     bindColorPicker('pickerWaterColor', 'waterColor');
 
-    // 5. Sky / Ground / Haze Color Scheme Combos
+    // 6. Sky / Ground / Haze Color Scheme Combos
     const colorComboSelect = document.getElementById('colorComboSelect');
     if (colorComboSelect) {
       const combos = {
@@ -272,6 +284,7 @@ export class KptUIManager {
         sunSize: 1.0,
         skyColorHorizon: [0.9, 0.4, 0.35],
         skyColorZenith: [0.12, 0.18, 0.45],
+        drawDistance: 80.0,
         fogDensity: 0.45,
         fogColor: [0.8, 0.5, 0.4],
         waterLevel: 0.6,
@@ -295,6 +308,7 @@ export class KptUIManager {
         sunSize: 0.8,
         skyColorHorizon: [0.5, 0.85, 0.9],
         skyColorZenith: [0.05, 0.45, 0.85],
+        drawDistance: 100.0,
         fogDensity: 0.25,
         fogColor: [0.45, 0.75, 0.7],
         waterLevel: 0.8,
@@ -318,6 +332,7 @@ export class KptUIManager {
         sunSize: 1.5,
         skyColorHorizon: [0.65, 0.2, 0.6],
         skyColorZenith: [0.1, 0.05, 0.3],
+        drawDistance: 60.0,
         fogDensity: 0.6,
         fogColor: [0.5, 0.2, 0.55],
         waterLevel: 0.5,
@@ -341,6 +356,7 @@ export class KptUIManager {
         sunSize: 1.2,
         skyColorHorizon: [0.95, 0.75, 0.5],
         skyColorZenith: [0.4, 0.25, 0.15],
+        drawDistance: 90.0,
         fogDensity: 0.3,
         fogColor: [0.85, 0.65, 0.45],
         waterLevel: 0.4,
@@ -377,6 +393,7 @@ export class KptUIManager {
 
     updateVal('terrainHeightSlider', s.terrainHeight, 'valTerrainHeight');
     updateVal('terrainScaleSlider', s.terrainScale, 'valTerrainScale');
+    updateVal('drawDistanceSlider', s.drawDistance, 'valDrawDistance');
     updateVal('fogDensitySlider', s.fogDensity, 'valFogDensity');
     updateVal('waterLevelSlider', s.waterLevel, 'valWaterLevel');
     updateVal('waterReflectSlider', s.waterReflectivity, 'valWaterReflect');

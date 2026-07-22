@@ -1,6 +1,6 @@
 /**
  * KPT Bryce 1.0 WebGL2 Raymarching & Heightfield GLSL Shader Suite
- * Ultra-Optimized Texture-Backed Raymarching Engine with Custom Atmosphere & Sun Controls.
+ * Ultra-Optimized Texture-Backed Raymarching Engine with Draw Distance Control.
  */
 
 export const VERTEX_SHADER_SOURCE = `#version 300 es
@@ -38,7 +38,8 @@ uniform float u_sunSize;
 uniform vec3 u_skyColorHorizon;
 uniform vec3 u_skyColorZenith;
 
-// Atmosphere & Water Uniforms
+// Atmosphere & Draw Distance Uniforms
+uniform float u_drawDistance;
 uniform float u_fogDensity;
 uniform vec3 u_fogColor;
 uniform float u_waterLevel;
@@ -76,7 +77,7 @@ vec3 getTerrainNormal(vec2 p) {
 
 bool raycastTerrain(vec3 ro, vec3 rd, int maxSteps, out float hitT, out vec3 hitNormal) {
     float t = 0.5;
-    float tMax = 80.0;
+    float tMax = u_drawDistance;
 
     for (int i = 0; i < 110; i++) {
         if (i >= maxSteps) break;
@@ -197,7 +198,7 @@ void main() {
     vec3 ro = u_cameraPos;
 
     vec3 finalColor = vec3(0.0);
-    float rayDist = 1000.0;
+    float rayDist = u_drawDistance;
 
     float tTerrain = -1.0, tSphere = -1.0, tWater = -1.0;
     vec3 nTerrain, nSphere;
@@ -207,11 +208,11 @@ void main() {
 
     if (rd.y < 0.0) {
         float tw = (u_waterLevel - ro.y) / rd.y;
-        if (tw > 0.0) tWater = tw;
+        if (tw > 0.0 && tw < u_drawDistance) tWater = tw;
     }
 
     int closestObject = 0;
-    float closestT = 10000.0;
+    float closestT = u_drawDistance;
 
     if (hitTerrain && tTerrain < closestT) {
         closestT = tTerrain;
@@ -269,8 +270,8 @@ void main() {
     }
 
     if (closestObject != 0) {
-        float fogFactor = 1.0 - exp(-rayDist * u_fogDensity * 0.035);
-        finalColor = mix(finalColor, u_fogColor, clamp(fogFactor, 0.0, 0.95));
+        float fogFactor = 1.0 - exp(-rayDist * u_fogDensity * (3.0 / u_drawDistance));
+        finalColor = mix(finalColor, u_fogColor, clamp(fogFactor, 0.0, 0.98));
     }
 
     finalColor = vec3(1.0) - exp(-finalColor * 1.2);

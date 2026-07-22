@@ -41,6 +41,7 @@ export class WebGLRenderer {
       skyColorHorizon: [0.8, 0.45, 0.35],
       skyColorZenith: [0.15, 0.25, 0.55],
 
+      drawDistance: 80.0,
       fogDensity: 0.4,
       fogColor: [0.75, 0.55, 0.45],
 
@@ -91,7 +92,8 @@ export class WebGLRenderer {
       'u_resolution', 'u_time', 'u_cameraPos', 'u_cameraTarget', 'u_fov',
       'u_sunDir', 'u_sunColor', 'u_sunIntensity', 'u_sunSize',
       'u_skyColorHorizon', 'u_skyColorZenith',
-      'u_fogDensity', 'u_fogColor', 'u_waterLevel', 'u_waterColor', 'u_waterReflectivity',
+      'u_drawDistance', 'u_fogDensity', 'u_fogColor',
+      'u_waterLevel', 'u_waterColor', 'u_waterReflectivity',
       'u_terrainScale', 'u_terrainHeight', 'u_paletteMode',
       'u_showSphere', 'u_spherePos', 'u_sphereRadius', 'u_sphereReflectivity',
       'u_renderMode', 'u_scanlineY', 'u_heightmap'
@@ -203,6 +205,7 @@ export class WebGLRenderer {
     gl.uniform3fv(this.uniforms.u_skyColorHorizon, s.skyColorHorizon);
     gl.uniform3fv(this.uniforms.u_skyColorZenith, s.skyColorZenith);
 
+    gl.uniform1f(this.uniforms.u_drawDistance, s.drawDistance);
     gl.uniform1f(this.uniforms.u_fogDensity, s.fogDensity);
     gl.uniform3fv(this.uniforms.u_fogColor, s.fogColor);
 
