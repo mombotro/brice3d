@@ -1,6 +1,6 @@
 /**
  * KPT Bryce 1.0 Tactile UI Manager
- * Handles 3D Trackballs, Color Combos, Terrain Domain, Seed Generation, Mesh Detail & Gaussian Smoothing, and Render Scaling.
+ * Handles 3D Trackballs, Presets, Dramatic Terrain Styles, Peak Steepness, Mesh Detail & Smoothing, and Render Scaling.
  */
 
 export class KptUIManager {
@@ -92,12 +92,36 @@ export class KptUIManager {
   }
 
   initNewFeatures() {
-    // 0. Terrain Domain Mode (Island vs Infinite)
+    // 0. Dramatic Terrain Style Selector
+    const terrainStyleSelect = document.getElementById('terrainStyleSelect');
+    if (terrainStyleSelect) {
+      terrainStyleSelect.addEventListener('change', (e) => {
+        const style = parseInt(e.target.value);
+        this.renderer.state.terrainStyle = style;
+        this.renderer.regenerateHeightmap();
+        if (this.onStateChange) this.onStateChange();
+      });
+    }
+
+    // 0b. Terrain Domain Mode (Island vs Infinite)
     const terrainDomainSelect = document.getElementById('terrainDomainSelect');
     if (terrainDomainSelect) {
       terrainDomainSelect.addEventListener('change', (e) => {
         const mode = parseInt(e.target.value);
         this.renderer.state.terrainDomainMode = mode;
+        this.renderer.regenerateHeightmap();
+        if (this.onStateChange) this.onStateChange();
+      });
+    }
+
+    // 0c. Peak Steepness / Exaggeration Slider
+    const steepnessSlider = document.getElementById('steepnessSlider');
+    const valSteepness = document.getElementById('valSteepness');
+    if (steepnessSlider) {
+      steepnessSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        this.renderer.state.steepness = val;
+        if (valSteepness) valSteepness.textContent = val.toFixed(2);
         this.renderer.regenerateHeightmap();
         if (this.onStateChange) this.onStateChange();
       });
@@ -310,34 +334,36 @@ export class KptUIManager {
 
     const presets = {
       sunset: {
-        cameraPos: [0.0, 4.5, -9.0],
+        cameraPos: [0.0, 5.0, -9.5],
         cameraTarget: [0.0, 1.2, 0.0],
         sunAzimuth: 45.0,
         sunElevation: 18.0,
         sunColor: [1.0, 0.7, 0.4],
-        sunIntensity: 1.0,
+        sunIntensity: 1.2,
         sunSize: 1.0,
         skyColorHorizon: [0.9, 0.4, 0.35],
         skyColorZenith: [0.12, 0.18, 0.45],
-        drawDistance: 120.0,
-        fogDensity: 0.35,
+        drawDistance: 150.0,
+        fogDensity: 0.30,
         fogColor: [0.8, 0.5, 0.4],
-        waterLevel: 0.6,
+        waterLevel: 0.45,
         waterColor: [0.05, 0.35, 0.45],
         waterReflectivity: 0.65,
         terrainScale: 0.8,
-        terrainHeight: 3.2,
-        meshQuality: 1.0,
-        meshSmoothing: 1.0,
+        terrainHeight: 4.2,
+        meshQuality: 1.2,
+        meshSmoothing: 0.5,
         terrainDomainMode: 0,
+        terrainStyle: 1,
+        steepness: 1.25,
         paletteMode: 0,
         showSphere: 1,
-        spherePos: [1.2, 1.8, 2.0],
+        spherePos: [1.2, 2.2, 2.0],
         sphereRadius: 0.8,
         sphereReflectivity: 0.95
       },
       emerald: {
-        cameraPos: [-6.0, 3.5, -7.0],
+        cameraPos: [-6.0, 4.0, -7.5],
         cameraTarget: [0.0, 1.0, 0.0],
         sunAzimuth: 120.0,
         sunElevation: 45.0,
@@ -346,25 +372,27 @@ export class KptUIManager {
         sunSize: 0.8,
         skyColorHorizon: [0.5, 0.85, 0.9],
         skyColorZenith: [0.05, 0.45, 0.85],
-        drawDistance: 150.0,
-        fogDensity: 0.25,
+        drawDistance: 160.0,
+        fogDensity: 0.22,
         fogColor: [0.45, 0.75, 0.7],
-        waterLevel: 0.8,
+        waterLevel: 0.55,
         waterColor: [0.0, 0.4, 0.35],
         waterReflectivity: 0.8,
         terrainScale: 1.0,
-        terrainHeight: 2.8,
+        terrainHeight: 3.5,
         meshQuality: 1.2,
-        meshSmoothing: 1.2,
+        meshSmoothing: 0.8,
         terrainDomainMode: 0,
+        terrainStyle: 2,
+        steepness: 1.1,
         paletteMode: 1,
         showSphere: 1,
-        spherePos: [-0.5, 1.5, 1.0],
+        spherePos: [-0.5, 1.8, 1.0],
         sphereRadius: 0.7,
         sphereReflectivity: 0.9
       },
       alien: {
-        cameraPos: [4.0, 5.0, -8.0],
+        cameraPos: [4.0, 5.5, -8.5],
         cameraTarget: [0.0, 0.8, 0.0],
         sunAzimuth: 210.0,
         sunElevation: 25.0,
@@ -373,25 +401,27 @@ export class KptUIManager {
         sunSize: 1.5,
         skyColorHorizon: [0.65, 0.2, 0.6],
         skyColorZenith: [0.1, 0.05, 0.3],
-        drawDistance: 80.0,
-        fogDensity: 0.5,
+        drawDistance: 100.0,
+        fogDensity: 0.45,
         fogColor: [0.5, 0.2, 0.55],
-        waterLevel: 0.5,
+        waterLevel: 0.4,
         waterColor: [0.3, 0.05, 0.4],
         waterReflectivity: 0.5,
         terrainScale: 0.7,
-        terrainHeight: 4.0,
+        terrainHeight: 5.0,
         meshQuality: 1.5,
-        meshSmoothing: 0.8,
+        meshSmoothing: 0.3,
         terrainDomainMode: 1,
+        terrainStyle: 4,
+        steepness: 1.6,
         paletteMode: 2,
         showSphere: 1,
-        spherePos: [0.0, 2.2, 0.0],
+        spherePos: [0.0, 2.5, 0.0],
         sphereRadius: 1.0,
         sphereReflectivity: 0.85
       },
       gold: {
-        cameraPos: [0.0, 6.0, -10.0],
+        cameraPos: [0.0, 6.5, -10.5],
         cameraTarget: [0.0, 1.0, 0.0],
         sunAzimuth: 15.0,
         sunElevation: 55.0,
@@ -400,20 +430,22 @@ export class KptUIManager {
         sunSize: 1.2,
         skyColorHorizon: [0.95, 0.75, 0.5],
         skyColorZenith: [0.4, 0.25, 0.15],
-        drawDistance: 130.0,
-        fogDensity: 0.25,
+        drawDistance: 150.0,
+        fogDensity: 0.22,
         fogColor: [0.85, 0.65, 0.45],
-        waterLevel: 0.4,
+        waterLevel: 0.3,
         waterColor: [0.4, 0.25, 0.1],
         waterReflectivity: 0.7,
         terrainScale: 0.9,
-        terrainHeight: 3.5,
-        meshQuality: 1.0,
-        meshSmoothing: 1.0,
+        terrainHeight: 4.5,
+        meshQuality: 1.2,
+        meshSmoothing: 0.4,
         terrainDomainMode: 1,
+        terrainStyle: 3,
+        steepness: 1.4,
         paletteMode: 3,
         showSphere: 0,
-        spherePos: [2.0, 1.6, -1.0],
+        spherePos: [2.0, 1.8, -1.0],
         sphereRadius: 0.9,
         sphereReflectivity: 0.92
       }
@@ -444,12 +476,16 @@ export class KptUIManager {
     updateVal('drawDistanceSlider', s.drawDistance, 'valDrawDistance');
     updateVal('meshQualitySlider', s.meshQuality, 'valMeshQuality');
     updateVal('meshSmoothingSlider', s.meshSmoothing, 'valMeshSmoothing');
+    updateVal('steepnessSlider', s.steepness, 'valSteepness');
     updateVal('fogDensitySlider', s.fogDensity, 'valFogDensity');
     updateVal('waterLevelSlider', s.waterLevel, 'valWaterLevel');
     updateVal('waterReflectSlider', s.waterReflectivity, 'valWaterReflect');
     updateVal('sphereReflectSlider', s.sphereReflectivity, 'valSphereReflect');
     updateVal('sunIntensitySlider', s.sunIntensity, 'valSunIntensity');
     updateVal('sunSizeSlider', s.sunSize, 'valSunSize');
+
+    const terrainStyleSelect = document.getElementById('terrainStyleSelect');
+    if (terrainStyleSelect) terrainStyleSelect.value = s.terrainStyle;
 
     const terrainDomainSelect = document.getElementById('terrainDomainSelect');
     if (terrainDomainSelect) terrainDomainSelect.value = s.terrainDomainMode;

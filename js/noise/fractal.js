@@ -1,6 +1,11 @@
 /**
  * KPT Bryce 1.0 Procedural Noise & Heightfield Generator
- * Includes Gaussian Heightmap Smoothing Filter (just like original KPT Bryce Terrain Editor).
+ * Supports 5 Dramatic Terrain Algorithms:
+ * 1. Classic Rolling Hills (Standard fBm)
+ * 2. Razor Peaks & Spire Crags (Ridged Multifractal)
+ * 3. Volcanic Ring Caldera (Crater Island with Volcanic Peak)
+ * 4. Terraced Grand Canyon (Layered Cliff Mesas & Deep Gorges)
+ * 5. Needle Spires (Exponential Granite Spires & Towers)
  */
 
 export class FractalGenerator {
@@ -86,6 +91,7 @@ export class FractalGenerator {
     );
   }
 
+  // 1. Standard fBm (Rolling Hills)
   fBm(x, z, octaves = 6, lacunarity = 2.0, gain = 0.48) {
     let total = 0;
     let frequency = 1.0;
@@ -102,12 +108,56 @@ export class FractalGenerator {
     return total / maxVal;
   }
 
-  // Gaussian Smoothing Pass (Original KPT Bryce Terrain Smoothing Filter)
+  // 2. Ridged Multifractal (Razor-sharp Spire Crags & Alpine Peaks)
+  ridgedfBm(x, z, octaves = 7, lacunarity = 2.0, gain = 0.5) {
+    let total = 0;
+    let frequency = 1.0;
+    let amplitude = 1.0;
+    let weight = 1.0;
+
+    for (let i = 0; i < octaves; i++) {
+      let signal = Math.abs(this.noise(x * frequency, z * frequency, 0.5));
+      signal = 1.0 - signal; // Invert to form sharp razor ridge crests
+      signal *= signal;      // Sharpen mountain ridges
+      signal *= weight;
+      weight = Math.min(1.0, signal * 2.2);
+
+      total += signal * amplitude;
+      frequency *= lacunarity;
+      amplitude *= gain;
+    }
+
+    return total * 0.85;
+  }
+
+  // 3. Volcanic Caldera (Dramatic Ring Crater Island)
+  volcanicfBm(x, z, octaves = 7) {
+    const dist = Math.sqrt(x * x + z * z);
+    const ring = Math.sin(dist * 3.5) * Math.exp(-dist * 0.7);
+    const base = this.fBm(x, z, octaves);
+    return base * 0.4 + ring * 0.8;
+  }
+
+  // 4. Terraced Grand Canyon (Step Mesas & Flat Tops)
+  terracedfBm(x, z, octaves = 7, steps = 7) {
+    const h = (this.fBm(x, z, octaves) + 1.0) * 0.5;
+    const stepH = Math.floor(h * steps) / steps;
+    const frac = (h * steps) - Math.floor(h * steps);
+    const smoothFrac = Math.pow(frac, 3.5); // Steep vertical cliffs, flat mesa tops
+    return ((stepH + smoothFrac / steps) * 2.0) - 1.0;
+  }
+
+  // 5. Needle Spires (Dramatic Towering Granite Pillars)
+  spirefBm(x, z, octaves = 7) {
+    const h = Math.max(0.0, (this.fBm(x, z, octaves) + 1.0) * 0.5);
+    return (Math.pow(h, 3.0) * 2.4) - 0.6;
+  }
+
+  // Gaussian Smoothing Filter Pass
   applyGaussianSmoothing(heights, size, passes = 1) {
     const temp = new Float32Array(size * size);
     
     for (let p = 0; p < passes; p++) {
-      // Horizontal Pass
       for (let z = 0; z < size; z++) {
         for (let x = 0; x < size; x++) {
           let sum = 0;
@@ -122,7 +172,6 @@ export class FractalGenerator {
         }
       }
 
-      // Vertical Pass
       for (let z = 0; z < size; z++) {
         for (let x = 0; x < size; x++) {
           let sum = 0;
@@ -139,8 +188,16 @@ export class FractalGenerator {
     }
   }
 
-  // Generate 16-bit High-Precision Heightmap Texture with KPT Bryce Gaussian Smoothing
-  generateHeightmapTexture(size = 512, octaves = 7, scale = 2.5, seedVal = 1337, smoothingAmount = 1.0) {
+  // Generate Heightmap Texture with Selected Terrain Style & Exaggeration
+  generateHeightmapTexture(
+    size = 512,
+    octaves = 7,
+    scale = 2.5,
+    seedVal = 1337,
+    smoothingAmount = 1.0,
+    terrainStyle = 1, // 0: Rolling, 1: Razor Peaks, 2: Volcano, 3: Canyon, 4: Spires
+    steepness = 1.0
+  ) {
     this.seed(seedVal);
     const rawHeights = new Float32Array(size * size);
 
@@ -148,14 +205,28 @@ export class FractalGenerator {
       for (let x = 0; x < size; x++) {
         const nx = (x / size - 0.5) * scale;
         const nz = (z / size - 0.5) * scale;
-        let h = this.fBm(nx, nz, octaves, 2.0, 0.48);
-        rawHeights[z * size + x] = Math.min(1.0, Math.max(0.0, (h + 1.0) * 0.5));
+
+        let h = 0;
+        if (terrainStyle === 1) {
+          h = this.ridgedfBm(nx, nz, octaves);
+        } else if (terrainStyle === 2) {
+          h = this.volcanicfBm(nx, nz, octaves);
+        } else if (terrainStyle === 3) {
+          h = this.terracedfBm(nx, nz, octaves);
+        } else if (terrainStyle === 4) {
+          h = this.spirefBm(nx, nz, octaves);
+        } else {
+          h = this.fBm(nx, nz, octaves);
+        }
+
+        // Apply steepness multiplier for dramatic elevation features
+        h = Math.pow(Math.max(0.0, (h + 1.0) * 0.5), 1.0 / Math.max(0.2, steepness));
+        rawHeights[z * size + x] = Math.min(1.0, Math.max(0.0, h));
       }
     }
 
-    // Apply Gaussian Smoothing passes based on smoothingAmount (0.0 = sharp, 3.0 = silky smooth)
-    const blurPasses = Math.round(smoothingAmount * 2);
-    if (blurPasses > 0) {
+    const blurPasses = Math.round(smoothingAmount * 1.5);
+    if (blurPasses > 0 && terrainStyle !== 1) { // Retain sharp razor edges for ridged peaks
       this.applyGaussianSmoothing(rawHeights, size, blurPasses);
     }
 

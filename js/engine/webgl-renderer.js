@@ -26,7 +26,7 @@ export class WebGLRenderer {
 
     // Scene State Defaults
     this.state = {
-      cameraPos: [0.0, 4.5, -9.0],
+      cameraPos: [0.0, 5.0, -9.5],
       cameraTarget: [0.0, 1.2, 0.0],
       fov: 60.0,
 
@@ -35,30 +35,32 @@ export class WebGLRenderer {
       sunAzimuth: 45.0,
       sunElevation: 35.0,
       sunColor: [1.0, 0.9, 0.75],
-      sunIntensity: 1.0,
+      sunIntensity: 1.2,
       sunSize: 1.0,
 
       skyColorHorizon: [0.8, 0.45, 0.35],
       skyColorZenith: [0.15, 0.25, 0.55],
 
-      drawDistance: 120.0,
-      fogDensity: 0.35,
+      drawDistance: 150.0,
+      fogDensity: 0.30,
       fogColor: [0.75, 0.55, 0.45],
 
-      waterLevel: 0.6,
+      waterLevel: 0.45,
       waterColor: [0.05, 0.35, 0.45],
-      waterReflectivity: 0.6,
+      waterReflectivity: 0.65,
 
       terrainScale: 0.8,
-      terrainHeight: 3.2,
+      terrainHeight: 4.2,
       octaves: 7,
-      meshQuality: 1.0,
-      meshSmoothing: 1.0,
+      meshQuality: 1.2,
+      meshSmoothing: 0.5,
       terrainDomainMode: 0,
+      terrainStyle: 1, // 0: Rolling, 1: Razor Peaks, 2: Volcano, 3: Canyon, 4: Spires
+      steepness: 1.25,
       paletteMode: 0,
 
       showSphere: 1,
-      spherePos: [1.2, 1.8, 2.0],
+      spherePos: [1.2, 2.2, 2.0],
       sphereRadius: 0.8,
       sphereReflectivity: 0.85,
 
@@ -147,7 +149,13 @@ export class WebGLRenderer {
     const octs = Math.min(8, Math.max(4, Math.floor(this.state.octaves * this.state.meshQuality)));
 
     const { data, size } = this.fractalGen.generateHeightmapTexture(
-      texSize, octs, 2.5, this.state.seed, this.state.meshSmoothing
+      texSize,
+      octs,
+      2.5,
+      this.state.seed,
+      this.state.meshSmoothing,
+      this.state.terrainStyle,
+      this.state.steepness
     );
 
     if (this.heightTexture) gl.deleteTexture(this.heightTexture);
