@@ -1,11 +1,6 @@
 /**
  * KPT Bryce 1.0 Procedural Noise & Heightfield Generator
- * Supports 5 Dramatic Terrain Algorithms:
- * 1. Classic Rolling Hills (Standard fBm)
- * 2. Razor Peaks & Spire Crags (Ridged Multifractal)
- * 3. Volcanic Ring Caldera (Crater Island with Volcanic Peak)
- * 4. Terraced Grand Canyon (Layered Cliff Mesas & Deep Gorges)
- * 5. Needle Spires (Exponential Granite Spires & Towers)
+ * Normalized Dynamic Range for Ultra-Dramatic Peaks, Canyons & Spires.
  */
 
 export class FractalGenerator {
@@ -117,8 +112,8 @@ export class FractalGenerator {
 
     for (let i = 0; i < octaves; i++) {
       let signal = Math.abs(this.noise(x * frequency, z * frequency, 0.5));
-      signal = 1.0 - signal; // Invert to form sharp razor ridge crests
-      signal *= signal;      // Sharpen mountain ridges
+      signal = 1.0 - signal;
+      signal *= signal;
       signal *= weight;
       weight = Math.min(1.0, signal * 2.2);
 
@@ -127,7 +122,7 @@ export class FractalGenerator {
       amplitude *= gain;
     }
 
-    return total * 0.85;
+    return total;
   }
 
   // 3. Volcanic Caldera (Dramatic Ring Crater Island)
@@ -143,7 +138,7 @@ export class FractalGenerator {
     const h = (this.fBm(x, z, octaves) + 1.0) * 0.5;
     const stepH = Math.floor(h * steps) / steps;
     const frac = (h * steps) - Math.floor(h * steps);
-    const smoothFrac = Math.pow(frac, 3.5); // Steep vertical cliffs, flat mesa tops
+    const smoothFrac = Math.pow(frac, 3.5);
     return ((stepH + smoothFrac / steps) * 2.0) - 1.0;
   }
 
@@ -188,18 +183,20 @@ export class FractalGenerator {
     }
   }
 
-  // Generate Heightmap Texture with Selected Terrain Style & Exaggeration
+  // Generate Heightmap Texture with Full Normalized Dynamic Range
   generateHeightmapTexture(
     size = 512,
     octaves = 7,
     scale = 2.5,
     seedVal = 1337,
-    smoothingAmount = 1.0,
-    terrainStyle = 1, // 0: Rolling, 1: Razor Peaks, 2: Volcano, 3: Canyon, 4: Spires
-    steepness = 1.0
+    smoothingAmount = 0.5,
+    terrainStyle = 1,
+    steepness = 1.25
   ) {
     this.seed(seedVal);
     const rawHeights = new Float32Array(size * size);
+    let minH = Infinity;
+    let maxH = -Infinity;
 
     for (let z = 0; z < size; z++) {
       for (let x = 0; x < size; x++) {
@@ -219,14 +216,22 @@ export class FractalGenerator {
           h = this.fBm(nx, nz, octaves);
         }
 
-        // Apply steepness multiplier for dramatic elevation features
-        h = Math.pow(Math.max(0.0, (h + 1.0) * 0.5), 1.0 / Math.max(0.2, steepness));
-        rawHeights[z * size + x] = Math.min(1.0, Math.max(0.0, h));
+        if (h < minH) minH = h;
+        if (h > maxH) maxH = h;
+        rawHeights[z * size + x] = h;
       }
     }
 
+    // Normalize to [0, 1] range so dramatic peaks use maximum height capacity
+    const rangeH = (maxH - minH) > 0.0001 ? (maxH - minH) : 1.0;
+    for (let i = 0; i < size * size; i++) {
+      let normH = (rawHeights[i] - minH) / rangeH;
+      normH = Math.pow(normH, 1.0 / Math.max(0.2, steepness));
+      rawHeights[i] = Math.min(1.0, Math.max(0.0, normH));
+    }
+
     const blurPasses = Math.round(smoothingAmount * 1.5);
-    if (blurPasses > 0 && terrainStyle !== 1) { // Retain sharp razor edges for ridged peaks
+    if (blurPasses > 0 && terrainStyle !== 1) {
       this.applyGaussianSmoothing(rawHeights, size, blurPasses);
     }
 

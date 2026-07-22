@@ -1,6 +1,6 @@
 /**
  * KPT Bryce 1.0 Tactile UI Manager
- * Handles 3D Trackballs, Presets, Dramatic Terrain Styles, Peak Steepness, Mesh Detail & Smoothing, and Render Scaling.
+ * Handles 3D Trackballs, Camera Height (Up/Down) & Distance, Presets, Dramatic Terrain Styles, and Render Scaling.
  */
 
 export class KptUIManager {
@@ -21,6 +21,19 @@ export class KptUIManager {
     this.initNewFeatures();
   }
 
+  updateCameraTransform() {
+    const dist = this.renderer.state.cameraDistance || 10.0;
+    const heightOffset = (this.renderer.state.cameraHeight - 5.0) || 0.0;
+    const azRad = (this.camAzimuth * Math.PI) / 180;
+    const elRad = (this.camElevation * Math.PI) / 180;
+
+    const x = dist * Math.cos(elRad) * Math.sin(azRad);
+    const y = Math.max(0.2, heightOffset + dist * Math.sin(elRad) + 2.0);
+    const z = dist * Math.cos(elRad) * Math.cos(azRad);
+
+    this.renderer.state.cameraPos = [x, y, z];
+  }
+
   initTrackballs() {
     const camOrb = document.getElementById('cameraTrackball');
     const camHandle = document.getElementById('cameraOrbHandle');
@@ -38,19 +51,11 @@ export class KptUIManager {
         const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 2.0;
 
         this.camAzimuth = nx * 180.0;
-        this.camElevation = Math.max(-20, Math.min(85, -ny * 60.0));
+        this.camElevation = Math.max(-25, Math.min(85, -ny * 65.0));
 
         camHandle.style.transform = `translate(${nx * 24}px, ${ny * 24}px)`;
 
-        const dist = 10.0;
-        const azRad = (this.camAzimuth * Math.PI) / 180;
-        const elRad = (this.camElevation * Math.PI) / 180;
-
-        const x = dist * Math.cos(elRad) * Math.sin(azRad);
-        const y = Math.max(0.5, dist * Math.sin(elRad) + 1.5);
-        const z = dist * Math.cos(elRad) * Math.cos(azRad);
-
-        this.renderer.state.cameraPos = [x, y, z];
+        this.updateCameraTransform();
         if (this.onStateChange) this.onStateChange();
       });
     }
@@ -92,7 +97,32 @@ export class KptUIManager {
   }
 
   initNewFeatures() {
-    // 0. Dramatic Terrain Style Selector
+    // 0. Camera Altitude Height (Up/Down) & Distance Controls
+    const cameraHeightSlider = document.getElementById('cameraHeightSlider');
+    const valCameraHeight = document.getElementById('valCameraHeight');
+    if (cameraHeightSlider) {
+      cameraHeightSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        this.renderer.state.cameraHeight = val;
+        if (valCameraHeight) valCameraHeight.textContent = val.toFixed(1);
+        this.updateCameraTransform();
+        if (this.onStateChange) this.onStateChange();
+      });
+    }
+
+    const cameraDistanceSlider = document.getElementById('cameraDistanceSlider');
+    const valCameraDistance = document.getElementById('valCameraDistance');
+    if (cameraDistanceSlider) {
+      cameraDistanceSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        this.renderer.state.cameraDistance = val;
+        if (valCameraDistance) valCameraDistance.textContent = val.toFixed(1);
+        this.updateCameraTransform();
+        if (this.onStateChange) this.onStateChange();
+      });
+    }
+
+    // 0a. Dramatic Terrain Style Selector
     const terrainStyleSelect = document.getElementById('terrainStyleSelect');
     if (terrainStyleSelect) {
       terrainStyleSelect.addEventListener('change', (e) => {
@@ -336,6 +366,8 @@ export class KptUIManager {
       sunset: {
         cameraPos: [0.0, 5.0, -9.5],
         cameraTarget: [0.0, 1.2, 0.0],
+        cameraHeight: 5.0,
+        cameraDistance: 10.0,
         sunAzimuth: 45.0,
         sunElevation: 18.0,
         sunColor: [1.0, 0.7, 0.4],
@@ -365,6 +397,8 @@ export class KptUIManager {
       emerald: {
         cameraPos: [-6.0, 4.0, -7.5],
         cameraTarget: [0.0, 1.0, 0.0],
+        cameraHeight: 4.0,
+        cameraDistance: 9.5,
         sunAzimuth: 120.0,
         sunElevation: 45.0,
         sunColor: [1.0, 0.98, 0.85],
@@ -394,6 +428,8 @@ export class KptUIManager {
       alien: {
         cameraPos: [4.0, 5.5, -8.5],
         cameraTarget: [0.0, 0.8, 0.0],
+        cameraHeight: 5.5,
+        cameraDistance: 9.0,
         sunAzimuth: 210.0,
         sunElevation: 25.0,
         sunColor: [0.4, 0.9, 1.0],
@@ -423,6 +459,8 @@ export class KptUIManager {
       gold: {
         cameraPos: [0.0, 6.5, -10.5],
         cameraTarget: [0.0, 1.0, 0.0],
+        cameraHeight: 6.5,
+        cameraDistance: 10.5,
         sunAzimuth: 15.0,
         sunElevation: 55.0,
         sunColor: [1.0, 0.85, 0.5],
@@ -464,25 +502,27 @@ export class KptUIManager {
 
   updateUIFromState() {
     const s = this.renderer.state;
-    const updateVal = (id, val, dispId) => {
+    const updateVal = (id, val, dispId, decimals = 2) => {
       const elem = document.getElementById(id);
       const disp = document.getElementById(dispId);
       if (elem) elem.value = val;
-      if (disp) disp.textContent = typeof val === 'number' ? val.toFixed(2) : val;
+      if (disp) disp.textContent = typeof val === 'number' ? val.toFixed(decimals) : val;
     };
 
-    updateVal('terrainHeightSlider', s.terrainHeight, 'valTerrainHeight');
-    updateVal('terrainScaleSlider', s.terrainScale, 'valTerrainScale');
-    updateVal('drawDistanceSlider', s.drawDistance, 'valDrawDistance');
-    updateVal('meshQualitySlider', s.meshQuality, 'valMeshQuality');
-    updateVal('meshSmoothingSlider', s.meshSmoothing, 'valMeshSmoothing');
-    updateVal('steepnessSlider', s.steepness, 'valSteepness');
-    updateVal('fogDensitySlider', s.fogDensity, 'valFogDensity');
-    updateVal('waterLevelSlider', s.waterLevel, 'valWaterLevel');
-    updateVal('waterReflectSlider', s.waterReflectivity, 'valWaterReflect');
-    updateVal('sphereReflectSlider', s.sphereReflectivity, 'valSphereReflect');
-    updateVal('sunIntensitySlider', s.sunIntensity, 'valSunIntensity');
-    updateVal('sunSizeSlider', s.sunSize, 'valSunSize');
+    updateVal('cameraHeightSlider', s.cameraHeight, 'valCameraHeight', 1);
+    updateVal('cameraDistanceSlider', s.cameraDistance, 'valCameraDistance', 1);
+    updateVal('terrainHeightSlider', s.terrainHeight, 'valTerrainHeight', 2);
+    updateVal('terrainScaleSlider', s.terrainScale, 'valTerrainScale', 2);
+    updateVal('drawDistanceSlider', s.drawDistance, 'valDrawDistance', 0);
+    updateVal('meshQualitySlider', s.meshQuality, 'valMeshQuality', 2);
+    updateVal('meshSmoothingSlider', s.meshSmoothing, 'valMeshSmoothing', 2);
+    updateVal('steepnessSlider', s.steepness, 'valSteepness', 2);
+    updateVal('fogDensitySlider', s.fogDensity, 'valFogDensity', 2);
+    updateVal('waterLevelSlider', s.waterLevel, 'valWaterLevel', 2);
+    updateVal('waterReflectSlider', s.waterReflectivity, 'valWaterReflect', 2);
+    updateVal('sphereReflectSlider', s.sphereReflectivity, 'valSphereReflect', 2);
+    updateVal('sunIntensitySlider', s.sunIntensity, 'valSunIntensity', 2);
+    updateVal('sunSizeSlider', s.sunSize, 'valSunSize', 2);
 
     const terrainStyleSelect = document.getElementById('terrainStyleSelect');
     if (terrainStyleSelect) terrainStyleSelect.value = s.terrainStyle;

@@ -28,6 +28,8 @@ export class WebGLRenderer {
     this.state = {
       cameraPos: [0.0, 5.0, -9.5],
       cameraTarget: [0.0, 1.2, 0.0],
+      cameraHeight: 5.0,
+      cameraDistance: 10.0,
       fov: 60.0,
 
       seed: 1337,
