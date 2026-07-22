@@ -243,6 +243,64 @@ body {
   margin-bottom: 8px;
 }
 
+/* Color Pickers & Inputs */
+.color-picker-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.color-picker-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: 600;
+  color: #475569;
+}
+
+input[type="color"].metal-color-input {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 20px;
+  border: 1px solid #8e99a8;
+  border-radius: 4px;
+  cursor: pointer;
+  background: none;
+  padding: 0;
+}
+
+input[type="number"].metal-input {
+  background: #ffffff;
+  border: 1px solid #94a3b8;
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #1e293b;
+  width: 80px;
+  outline: none;
+}
+
+.checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #334155;
+  margin-top: 6px;
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: #2563eb;
+  cursor: pointer;
+}
+
 /* Sliders & Controls */
 .control-row {
   display: flex;

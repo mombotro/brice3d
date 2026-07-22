@@ -77,6 +77,36 @@
         </select>
       </section>
 
+      <!-- Color Combos (Sky, Ground, Haze) -->
+      <section class="panel-section">
+        <div class="panel-title">Sky, Ground & Haze Combos</div>
+        <select id="colorComboSelect" class="metal-select" style="margin-bottom: 8px;">
+          <option value="sunset">Sunset Glow (Orange / Blue / Haze)</option>
+          <option value="emerald">Emerald Haven (Cyan / Teal / Emerald)</option>
+          <option value="cyberpunk">Cyberpunk Neon (Magenta / Cyan / Violet)</option>
+          <option value="golden">Golden Hour (Amber / Purple / Sand)</option>
+          <option value="midnight">Midnight Frost (Deep Blue / Ice / Mist)</option>
+        </select>
+        <div class="color-picker-grid">
+          <div class="color-picker-item">
+            <span>Sky Horizon</span>
+            <input type="color" id="pickerSkyHorizon" class="metal-color-input" value="#e66659">
+          </div>
+          <div class="color-picker-item">
+            <span>Sky Zenith</span>
+            <input type="color" id="pickerSkyZenith" class="metal-color-input" value="#1f2e73">
+          </div>
+          <div class="color-picker-item">
+            <span>Haze / Fog</span>
+            <input type="color" id="pickerFogColor" class="metal-color-input" value="#cc8066">
+          </div>
+          <div class="color-picker-item">
+            <span>Sun Color</span>
+            <input type="color" id="pickerSunColor" class="metal-color-input" value="#ffb366">
+          </div>
+        </div>
+      </section>
+
       <!-- Performance & Render Quality Scaling -->
       <section class="panel-section">
         <div class="panel-title">Performance & Quality</div>
@@ -93,9 +123,13 @@
         <button class="metal-btn" id="btnRerender" style="width: 100%; margin-top: 4px;">↻ Re-render Scene</button>
       </section>
 
-      <!-- Terrain Procedural Sliders -->
+      <!-- Terrain Procedural Sliders & Seed -->
       <section class="panel-section">
-        <div class="panel-title">Fractal Terrain</div>
+        <div class="panel-title">Fractal Terrain & Seed</div>
+        <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+          <button class="metal-btn btn-primary" id="btnRandomSeed" style="flex: 1;">🎲 Random Seed</button>
+          <input type="number" id="inputSeed" class="metal-input" value="1337">
+        </div>
         <div class="control-row">
           <div class="control-label"><span>Height Scale</span><span class="val" id="valTerrainHeight">3.20</span></div>
           <input type="range" class="metal-range" id="terrainHeightSlider" min="0.5" max="6.0" step="0.1" value="3.2">
@@ -141,9 +175,26 @@
         </div>
       </section>
 
+      <!-- Sun Options -->
+      <section class="panel-section">
+        <div class="panel-title">Sun Controls</div>
+        <div class="control-row">
+          <div class="control-label"><span>Sun Intensity</span><span class="val" id="valSunIntensity">1.00</span></div>
+          <input type="range" class="metal-range" id="sunIntensitySlider" min="0.2" max="3.0" step="0.05" value="1.0">
+        </div>
+        <div class="control-row">
+          <div class="control-label"><span>Sun Size / Glow</span><span class="val" id="valSunSize">1.00</span></div>
+          <input type="range" class="metal-range" id="sunSizeSlider" min="0.3" max="3.0" step="0.05" value="1.0">
+        </div>
+      </section>
+
       <!-- Infinite Water Plane -->
       <section class="panel-section">
         <div class="panel-title">Infinite Water Plane</div>
+        <div class="color-picker-item" style="margin-bottom: 8px;">
+          <span>Water Color</span>
+          <input type="color" id="pickerWaterColor" class="metal-color-input" value="#0d5973">
+        </div>
         <div class="control-row">
           <div class="control-label"><span>Water Height Level</span><span class="val" id="valWaterLevel">0.60</span></div>
           <input type="range" class="metal-range" id="waterLevelSlider" min="0.0" max="2.5" step="0.05" value="0.6">
@@ -157,7 +208,11 @@
       <!-- Sphere Primitive -->
       <section class="panel-section">
         <div class="panel-title">Chrome Primitive Sphere</div>
-        <div class="control-row">
+        <div class="checkbox-row">
+          <input type="checkbox" id="chkShowSphere" checked>
+          <label for="chkShowSphere">Show Primitive Sphere</label>
+        </div>
+        <div class="control-row" style="margin-top: 10px;">
           <div class="control-label"><span>Sphere Reflectivity</span><span class="val" id="valSphereReflect">0.95</span></div>
           <input type="range" class="metal-range" id="sphereReflectSlider" min="0.0" max="1.0" step="0.05" value="0.95">
         </div>

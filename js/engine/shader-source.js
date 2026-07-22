@@ -1,6 +1,6 @@
 /**
  * KPT Bryce 1.0 WebGL2 Raymarching & Heightfield GLSL Shader Suite
- * Ultra-Optimized Texture-Backed Raymarching Engine for High FPS.
+ * Ultra-Optimized Texture-Backed Raymarching Engine with Custom Atmosphere & Sun Controls.
  */
 
 export const VERTEX_SHADER_SOURCE = `#version 300 es
@@ -30,9 +30,11 @@ uniform vec3 u_cameraPos;
 uniform vec3 u_cameraTarget;
 uniform float u_fov;
 
-// Lighting & Sky Uniforms
+// Lighting & Sun Uniforms
 uniform vec3 u_sunDir;
 uniform vec3 u_sunColor;
+uniform float u_sunIntensity;
+uniform float u_sunSize;
 uniform vec3 u_skyColorHorizon;
 uniform vec3 u_skyColorZenith;
 
@@ -43,28 +45,27 @@ uniform float u_waterLevel;
 uniform vec3 u_waterColor;
 uniform float u_waterReflectivity;
 
-// Terrain & Noise Uniforms
+// Terrain Uniforms
 uniform float u_terrainScale;
 uniform float u_terrainHeight;
-uniform int u_paletteMode; // 0: Alpine, 1: Emerald Island, 2: Alien Purple, 3: Gold Canyon
+uniform int u_paletteMode;
 
 // Sphere Primitive Uniforms
+uniform int u_showSphere;
 uniform vec3 u_spherePos;
 uniform float u_sphereRadius;
 uniform float u_sphereReflectivity;
 
 // Rendering Mode
-uniform int u_renderMode; // 0: Real-time 60FPS, 1: Scanline overlay
+uniform int u_renderMode;
 uniform float u_scanlineY;
 
-// Fast O(1) Heightmap Texture Fetch
 float getTerrainHeight(vec2 p) {
     vec2 uv = p * 0.04 * u_terrainScale + 0.5;
     if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) return 0.0;
     return texture(u_heightmap, uv).r * u_terrainHeight;
 }
 
-// Fast Terrain Normal via Central Differencing
 vec3 getTerrainNormal(vec2 p) {
     float eps = 0.04;
     float h = getTerrainHeight(p);
@@ -73,7 +74,6 @@ vec3 getTerrainNormal(vec2 p) {
     return normalize(vec3(h - hx, eps, h - hz));
 }
 
-// Ultra-Fast Adaptive Ray-Heightfield Traversal
 bool raycastTerrain(vec3 ro, vec3 rd, int maxSteps, out float hitT, out vec3 hitNormal) {
     float t = 0.5;
     float tMax = 80.0;
@@ -84,7 +84,6 @@ bool raycastTerrain(vec3 ro, vec3 rd, int maxSteps, out float hitT, out vec3 hit
         float h = getTerrainHeight(p.xz);
 
         if (p.y <= h) {
-            // Binary search refinement for exact surface contact
             float t0 = t - max(0.08, t * 0.025);
             float t1 = t;
             for (int j = 0; j < 4; j++) {
@@ -101,7 +100,6 @@ bool raycastTerrain(vec3 ro, vec3 rd, int maxSteps, out float hitT, out vec3 hit
             return true;
         }
 
-        // Adaptive step size: larger step when high above ground or far away
         float diff = max(0.1, p.y - h);
         t += max(0.08, diff * 0.35 + t * 0.015);
         if (t > tMax) break;
@@ -109,8 +107,8 @@ bool raycastTerrain(vec3 ro, vec3 rd, int maxSteps, out float hitT, out vec3 hit
     return false;
 }
 
-// Ray-Sphere Primitive Intersection
 bool raycastSphere(vec3 ro, vec3 rd, vec3 center, float radius, out float tHit, out vec3 norm) {
+    if (u_showSphere == 0) return false;
     vec3 oc = ro - center;
     float b = dot(oc, rd);
     float c = dot(oc, oc) - radius * radius;
@@ -125,7 +123,6 @@ bool raycastSphere(vec3 ro, vec3 rd, vec3 center, float radius, out float tHit, 
     return true;
 }
 
-// Bryce Material Palette Resolver
 vec3 getTerrainColor(vec3 pos, vec3 normal) {
     float height = pos.y;
     float slope = dot(normal, vec3(0.0, 1.0, 0.0));
@@ -169,17 +166,17 @@ vec3 getTerrainColor(vec3 pos, vec3 normal) {
     return col;
 }
 
-// Sky Gradient & Sun Disc
 vec3 renderSky(vec3 rd) {
     float sunDot = max(dot(rd, u_sunDir), 0.0);
     float skyHeight = max(rd.y, 0.0);
 
     vec3 sky = mix(u_skyColorHorizon, u_skyColorZenith, pow(skyHeight, 0.6));
     
-    float sunDisc = smoothstep(0.997, 0.999, sunDot);
-    float sunGlow = pow(sunDot, 16.0) * 0.8 + pow(sunDot, 64.0) * 1.5;
+    float discThreshold = 1.0 - (0.003 * u_sunSize);
+    float sunDisc = smoothstep(discThreshold - 0.001, discThreshold, sunDot);
+    float sunGlow = pow(sunDot, 16.0 / u_sunSize) * 0.8 + pow(sunDot, 64.0 / u_sunSize) * 1.5;
     
-    return sky + u_sunColor * (sunDisc * 3.0 + sunGlow);
+    return sky + u_sunColor * u_sunIntensity * (sunDisc * 3.0 + sunGlow);
 }
 
 void main() {
@@ -192,7 +189,6 @@ void main() {
         }
     }
 
-    // Setup Camera Matrix
     vec3 ww = normalize(u_cameraTarget - u_cameraPos);
     vec3 uu = normalize(cross(ww, vec3(0.0, 1.0, 0.0)));
     vec3 vv = cross(uu, ww);
@@ -236,7 +232,7 @@ void main() {
         vec3 pos = ro + rd * closestT;
         vec3 albedo = getTerrainColor(pos, nTerrain);
         float diff = max(dot(nTerrain, u_sunDir), 0.15);
-        finalColor = albedo * (u_sunColor * diff + vec3(0.2, 0.25, 0.3));
+        finalColor = albedo * (u_sunColor * u_sunIntensity * diff + vec3(0.2, 0.25, 0.3));
         rayDist = closestT;
     } else if (closestObject == 2) {
         vec3 pos = ro + rd * tWater;
@@ -268,7 +264,7 @@ void main() {
         float spec = pow(max(dot(reflDir, u_sunDir), 0.0), 32.0);
 
         vec3 baseCol = vec3(0.9, 0.92, 0.95);
-        finalColor = mix(baseCol * diff * u_sunColor, reflColor, u_sphereReflectivity) + u_sunColor * spec;
+        finalColor = mix(baseCol * diff * u_sunColor * u_sunIntensity, reflColor, u_sphereReflectivity) + u_sunColor * u_sunIntensity * spec;
         rayDist = tSphere;
     }
 

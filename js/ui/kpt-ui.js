@@ -1,6 +1,6 @@
 /**
  * KPT Bryce 1.0 Tactile UI Manager
- * Handles 3D Trackballs (Camera Orbit & Sun Position), Preset Selection, and Performance Scaling.
+ * Handles 3D Trackballs, Color Combos, Sun Controls, Sphere Toggle, Seed Generation, and Performance Scaling.
  */
 
 export class KptUIManager {
@@ -18,6 +18,7 @@ export class KptUIManager {
     this.initPresetSelector();
     this.initSliderControls();
     this.initPerformanceControls();
+    this.initNewFeatures();
   }
 
   initTrackballs() {
@@ -28,7 +29,7 @@ export class KptUIManager {
     const sunHandle = document.getElementById('sunOrbHandle');
 
     if (camOrb) {
-      camOrb.addEventListener('mousedown', (e) => { this.isDraggingCamOrb = true; });
+      camOrb.addEventListener('mousedown', () => { this.isDraggingCamOrb = true; });
       window.addEventListener('mouseup', () => { this.isDraggingCamOrb = false; });
       window.addEventListener('mousemove', (e) => {
         if (!this.isDraggingCamOrb) return;
@@ -55,7 +56,7 @@ export class KptUIManager {
     }
 
     if (sunOrb) {
-      sunOrb.addEventListener('mousedown', (e) => { this.isDraggingSunOrb = true; });
+      sunOrb.addEventListener('mousedown', () => { this.isDraggingSunOrb = true; });
       window.addEventListener('mouseup', () => { this.isDraggingSunOrb = false; });
       window.addEventListener('mousemove', (e) => {
         if (!this.isDraggingSunOrb) return;
@@ -71,6 +72,149 @@ export class KptUIManager {
         this.renderer.state.sunAzimuth = az;
         this.renderer.state.sunElevation = el;
         if (this.onStateChange) this.onStateChange();
+      });
+    }
+  }
+
+  hexToRGB(hex) {
+    let c = hex.replace('#', '');
+    if (c.length === 3) c = c.split('').map(x => x + x).join('');
+    const num = parseInt(c, 16);
+    return [(num >> 16 & 255) / 255.0, (num >> 8 & 255) / 255.0, (num & 255) / 255.0];
+  }
+
+  rgbToHex(rgb) {
+    const toHex = (n) => {
+      const h = Math.round(n * 255).toString(16);
+      return h.length === 1 ? '0' + h : h;
+    };
+    return `#${toHex(rgb[0])}${toHex(rgb[1])}${toHex(rgb[2])}`;
+  }
+
+  initNewFeatures() {
+    // 1. Random Seed Controls
+    const btnRandomSeed = document.getElementById('btnRandomSeed');
+    const inputSeed = document.getElementById('inputSeed');
+
+    if (btnRandomSeed) {
+      btnRandomSeed.addEventListener('click', () => {
+        const newSeed = Math.floor(Math.random() * 999999);
+        this.renderer.state.seed = newSeed;
+        if (inputSeed) inputSeed.value = newSeed;
+        this.renderer.regenerateHeightmap();
+        if (this.onStateChange) this.onStateChange();
+      });
+    }
+
+    if (inputSeed) {
+      inputSeed.addEventListener('change', (e) => {
+        const val = parseInt(e.target.value) || 1337;
+        this.renderer.state.seed = val;
+        this.renderer.regenerateHeightmap();
+        if (this.onStateChange) this.onStateChange();
+      });
+    }
+
+    // 2. Remove / Show Primitive Sphere Toggle
+    const chkShowSphere = document.getElementById('chkShowSphere');
+    if (chkShowSphere) {
+      chkShowSphere.addEventListener('change', (e) => {
+        this.renderer.state.showSphere = e.target.checked ? 1 : 0;
+        if (this.onStateChange) this.onStateChange();
+      });
+    }
+
+    // 3. Sun Intensity & Size Controls
+    const sunIntensitySlider = document.getElementById('sunIntensitySlider');
+    const valSunIntensity = document.getElementById('valSunIntensity');
+    if (sunIntensitySlider) {
+      sunIntensitySlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        this.renderer.state.sunIntensity = val;
+        if (valSunIntensity) valSunIntensity.textContent = val.toFixed(2);
+        if (this.onStateChange) this.onStateChange();
+      });
+    }
+
+    const sunSizeSlider = document.getElementById('sunSizeSlider');
+    const valSunSize = document.getElementById('valSunSize');
+    if (sunSizeSlider) {
+      sunSizeSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        this.renderer.state.sunSize = val;
+        if (valSunSize) valSunSize.textContent = val.toFixed(2);
+        if (this.onStateChange) this.onStateChange();
+      });
+    }
+
+    // 4. Color Pickers (Sky Horizon, Zenith, Fog Haze, Sun Color, Water)
+    const bindColorPicker = (id, stateKey) => {
+      const picker = document.getElementById(id);
+      if (!picker) return;
+      picker.addEventListener('input', (e) => {
+        this.renderer.state[stateKey] = this.hexToRGB(e.target.value);
+        if (this.onStateChange) this.onStateChange();
+      });
+    };
+
+    bindColorPicker('pickerSkyHorizon', 'skyColorHorizon');
+    bindColorPicker('pickerSkyZenith', 'skyColorZenith');
+    bindColorPicker('pickerFogColor', 'fogColor');
+    bindColorPicker('pickerSunColor', 'sunColor');
+    bindColorPicker('pickerWaterColor', 'waterColor');
+
+    // 5. Sky / Ground / Haze Color Scheme Combos
+    const colorComboSelect = document.getElementById('colorComboSelect');
+    if (colorComboSelect) {
+      const combos = {
+        sunset: {
+          skyHorizon: [0.9, 0.4, 0.35],
+          skyZenith: [0.12, 0.18, 0.45],
+          fog: [0.8, 0.5, 0.4],
+          sun: [1.0, 0.7, 0.4],
+          paletteMode: 0
+        },
+        emerald: {
+          skyHorizon: [0.5, 0.85, 0.9],
+          skyZenith: [0.05, 0.45, 0.85],
+          fog: [0.45, 0.75, 0.7],
+          sun: [1.0, 0.98, 0.85],
+          paletteMode: 1
+        },
+        cyberpunk: {
+          skyHorizon: [0.9, 0.1, 0.6],
+          skyZenith: [0.1, 0.0, 0.3],
+          fog: [0.7, 0.1, 0.5],
+          sun: [0.0, 0.9, 1.0],
+          paletteMode: 2
+        },
+        golden: {
+          skyHorizon: [0.95, 0.75, 0.5],
+          skyZenith: [0.4, 0.25, 0.15],
+          fog: [0.85, 0.65, 0.45],
+          sun: [1.0, 0.85, 0.5],
+          paletteMode: 3
+        },
+        midnight: {
+          skyHorizon: [0.1, 0.15, 0.3],
+          skyZenith: [0.02, 0.04, 0.1],
+          fog: [0.08, 0.12, 0.25],
+          sun: [0.7, 0.8, 1.0],
+          paletteMode: 0
+        }
+      };
+
+      colorComboSelect.addEventListener('change', (e) => {
+        const combo = combos[e.target.value];
+        if (combo) {
+          this.renderer.state.skyColorHorizon = combo.skyHorizon;
+          this.renderer.state.skyColorZenith = combo.skyZenith;
+          this.renderer.state.fogColor = combo.fog;
+          this.renderer.state.sunColor = combo.sun;
+          this.renderer.state.paletteMode = combo.paletteMode;
+          this.updateUIFromState();
+          if (this.onStateChange) this.onStateChange();
+        }
       });
     }
   }
@@ -124,6 +268,8 @@ export class KptUIManager {
         sunAzimuth: 45.0,
         sunElevation: 18.0,
         sunColor: [1.0, 0.7, 0.4],
+        sunIntensity: 1.0,
+        sunSize: 1.0,
         skyColorHorizon: [0.9, 0.4, 0.35],
         skyColorZenith: [0.12, 0.18, 0.45],
         fogDensity: 0.45,
@@ -134,6 +280,7 @@ export class KptUIManager {
         terrainScale: 0.8,
         terrainHeight: 3.2,
         paletteMode: 0,
+        showSphere: 1,
         spherePos: [1.2, 1.8, 2.0],
         sphereRadius: 0.8,
         sphereReflectivity: 0.95
@@ -144,6 +291,8 @@ export class KptUIManager {
         sunAzimuth: 120.0,
         sunElevation: 45.0,
         sunColor: [1.0, 0.98, 0.85],
+        sunIntensity: 1.2,
+        sunSize: 0.8,
         skyColorHorizon: [0.5, 0.85, 0.9],
         skyColorZenith: [0.05, 0.45, 0.85],
         fogDensity: 0.25,
@@ -154,6 +303,7 @@ export class KptUIManager {
         terrainScale: 1.0,
         terrainHeight: 2.8,
         paletteMode: 1,
+        showSphere: 1,
         spherePos: [-0.5, 1.5, 1.0],
         sphereRadius: 0.7,
         sphereReflectivity: 0.9
@@ -164,6 +314,8 @@ export class KptUIManager {
         sunAzimuth: 210.0,
         sunElevation: 25.0,
         sunColor: [0.4, 0.9, 1.0],
+        sunIntensity: 1.5,
+        sunSize: 1.5,
         skyColorHorizon: [0.65, 0.2, 0.6],
         skyColorZenith: [0.1, 0.05, 0.3],
         fogDensity: 0.6,
@@ -174,6 +326,7 @@ export class KptUIManager {
         terrainScale: 0.7,
         terrainHeight: 4.0,
         paletteMode: 2,
+        showSphere: 1,
         spherePos: [0.0, 2.2, 0.0],
         sphereRadius: 1.0,
         sphereReflectivity: 0.85
@@ -184,6 +337,8 @@ export class KptUIManager {
         sunAzimuth: 15.0,
         sunElevation: 55.0,
         sunColor: [1.0, 0.85, 0.5],
+        sunIntensity: 1.1,
+        sunSize: 1.2,
         skyColorHorizon: [0.95, 0.75, 0.5],
         skyColorZenith: [0.4, 0.25, 0.15],
         fogDensity: 0.3,
@@ -194,6 +349,7 @@ export class KptUIManager {
         terrainScale: 0.9,
         terrainHeight: 3.5,
         paletteMode: 3,
+        showSphere: 0,
         spherePos: [2.0, 1.6, -1.0],
         sphereRadius: 0.9,
         sphereReflectivity: 0.92
@@ -225,5 +381,24 @@ export class KptUIManager {
     updateVal('waterLevelSlider', s.waterLevel, 'valWaterLevel');
     updateVal('waterReflectSlider', s.waterReflectivity, 'valWaterReflect');
     updateVal('sphereReflectSlider', s.sphereReflectivity, 'valSphereReflect');
+    updateVal('sunIntensitySlider', s.sunIntensity, 'valSunIntensity');
+    updateVal('sunSizeSlider', s.sunSize, 'valSunSize');
+
+    const chkShowSphere = document.getElementById('chkShowSphere');
+    if (chkShowSphere) chkShowSphere.checked = s.showSphere === 1;
+
+    const inputSeed = document.getElementById('inputSeed');
+    if (inputSeed) inputSeed.value = s.seed;
+
+    const updateColor = (id, rgb) => {
+      const picker = document.getElementById(id);
+      if (picker) picker.value = this.rgbToHex(rgb);
+    };
+
+    updateColor('pickerSkyHorizon', s.skyColorHorizon);
+    updateColor('pickerSkyZenith', s.skyColorZenith);
+    updateColor('pickerFogColor', s.fogColor);
+    updateColor('pickerSunColor', s.sunColor);
+    updateColor('pickerWaterColor', s.waterColor);
   }
 }

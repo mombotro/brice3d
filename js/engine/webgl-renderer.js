@@ -30,9 +30,13 @@ export class WebGLRenderer {
       cameraTarget: [0.0, 1.2, 0.0],
       fov: 60.0,
 
+      seed: 1337,
+
       sunAzimuth: 45.0,
       sunElevation: 35.0,
       sunColor: [1.0, 0.9, 0.75],
+      sunIntensity: 1.0,
+      sunSize: 1.0,
 
       skyColorHorizon: [0.8, 0.45, 0.35],
       skyColorZenith: [0.15, 0.25, 0.55],
@@ -49,15 +53,16 @@ export class WebGLRenderer {
       octaves: 6,
       paletteMode: 0,
 
+      showSphere: 1,
       spherePos: [1.2, 1.8, 2.0],
       sphereRadius: 0.8,
       sphereReflectivity: 0.85,
 
-      renderMode: 0, // 0: Real-time 60FPS, 1: Scanline Progressive
+      renderMode: 0,
       scanlineSpeed: 6.0,
       scanlineY: 0.0,
 
-      renderScale: 0.75 // Performance Render Scale factor (0.5 to 1.0)
+      renderScale: 0.75
     };
 
     this.initShaders();
@@ -84,11 +89,12 @@ export class WebGLRenderer {
 
     const uniformNames = [
       'u_resolution', 'u_time', 'u_cameraPos', 'u_cameraTarget', 'u_fov',
-      'u_sunDir', 'u_sunColor', 'u_skyColorHorizon', 'u_skyColorZenith',
+      'u_sunDir', 'u_sunColor', 'u_sunIntensity', 'u_sunSize',
+      'u_skyColorHorizon', 'u_skyColorZenith',
       'u_fogDensity', 'u_fogColor', 'u_waterLevel', 'u_waterColor', 'u_waterReflectivity',
       'u_terrainScale', 'u_terrainHeight', 'u_paletteMode',
-      'u_spherePos', 'u_sphereRadius', 'u_sphereReflectivity', 'u_renderMode', 'u_scanlineY',
-      'u_heightmap'
+      'u_showSphere', 'u_spherePos', 'u_sphereRadius', 'u_sphereReflectivity',
+      'u_renderMode', 'u_scanlineY', 'u_heightmap'
     ];
 
     uniformNames.forEach(name => {
@@ -132,7 +138,7 @@ export class WebGLRenderer {
 
   initHeightmapTexture() {
     const gl = this.gl;
-    const { data, size } = this.fractalGen.generateHeightmapTexture(512, this.state.octaves, 2.5);
+    const { data, size } = this.fractalGen.generateHeightmapTexture(512, this.state.octaves, 2.5, this.state.seed);
 
     if (this.heightTexture) gl.deleteTexture(this.heightTexture);
 
@@ -178,12 +184,10 @@ export class WebGLRenderer {
 
     gl.useProgram(this.program);
 
-    // Bind Heightmap Texture
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.heightTexture);
     gl.uniform1i(this.uniforms.u_heightmap, 0);
 
-    // Uniform Updates
     gl.uniform2f(this.uniforms.u_resolution, this.canvas.width, this.canvas.height);
     gl.uniform1f(this.uniforms.u_time, (performance.now() - this.startTime) * 0.001);
 
@@ -194,6 +198,8 @@ export class WebGLRenderer {
     const sunDir = this.updateSunVector();
     gl.uniform3fv(this.uniforms.u_sunDir, sunDir);
     gl.uniform3fv(this.uniforms.u_sunColor, s.sunColor);
+    gl.uniform1f(this.uniforms.u_sunIntensity, s.sunIntensity);
+    gl.uniform1f(this.uniforms.u_sunSize, s.sunSize);
     gl.uniform3fv(this.uniforms.u_skyColorHorizon, s.skyColorHorizon);
     gl.uniform3fv(this.uniforms.u_skyColorZenith, s.skyColorZenith);
 
@@ -208,6 +214,7 @@ export class WebGLRenderer {
     gl.uniform1f(this.uniforms.u_terrainHeight, s.terrainHeight);
     gl.uniform1i(this.uniforms.u_paletteMode, s.paletteMode);
 
+    gl.uniform1i(this.uniforms.u_showSphere, s.showSphere);
     gl.uniform3fv(this.uniforms.u_spherePos, s.spherePos);
     gl.uniform1f(this.uniforms.u_sphereRadius, s.sphereRadius);
     gl.uniform1f(this.uniforms.u_sphereReflectivity, s.sphereReflectivity);

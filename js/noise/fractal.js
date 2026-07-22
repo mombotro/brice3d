@@ -1,6 +1,6 @@
 /**
  * KPT Bryce 1.0 Procedural Noise & Heightfield Generator
- * Optimized for fast WebGL 2D Texture Uploads.
+ * Optimized for fast WebGL 2D Texture Uploads with dynamic seeding.
  */
 
 export class FractalGenerator {
@@ -102,8 +102,8 @@ export class FractalGenerator {
     return total / maxVal;
   }
 
-  // Generate 512x512 Heightmap Texture Data (RGBA Float/Byte array) for instant GPU sampling
-  generateHeightmapTexture(size = 512, octaves = 6, scale = 2.5) {
+  generateHeightmapTexture(size = 512, octaves = 6, scale = 2.5, seedVal = 1337) {
+    this.seed(seedVal);
     const data = new Uint8Array(size * size * 4);
     for (let z = 0; z < size; z++) {
       for (let x = 0; x < size; x++) {
@@ -115,7 +115,7 @@ export class FractalGenerator {
 
         const byteVal = Math.floor(h * 255);
         const idx = (z * size + x) * 4;
-        data[idx]     = byteVal; // Red channel stores height
+        data[idx]     = byteVal;
         data[idx + 1] = byteVal;
         data[idx + 2] = byteVal;
         data[idx + 3] = 255;
