@@ -131,9 +131,10 @@
         <button class="metal-btn" id="btnRerender" style="width: 100%; margin-top: 4px;">↻ Re-render Scene</button>
       </section>
 
-      <!-- Terrain Feature Style & Dramatic Controls -->
+      <!-- Terrain Feature Style & Interactive Painter -->
       <section class="panel-section">
         <div class="panel-title">Fractal Terrain & Feature Style</div>
+        <button class="metal-btn btn-amber" id="btnOpenNoiseEditor" style="width: 100%; margin-bottom: 8px;">🎨 Edit Heightmap Noise (Brush)</button>
         <select id="terrainStyleSelect" class="metal-select" style="margin-bottom: 8px;">
           <option value="1" selected>Razor Peaks & Spire Crags (Ridged)</option>
           <option value="2">Volcanic Ring Caldera (Crater Island)</option>
@@ -255,6 +256,56 @@
     </aside>
 
   </main>
+
+  <!-- Mac OS X Aqua Floating Heightmap Noise Editor Modal -->
+  <div class="kpt-modal-overlay" id="noiseEditorModal">
+    <div class="kpt-modal-window">
+      <div class="modal-header">
+        <div class="macosx-traffic-lights">
+          <div class="traffic-dot close" id="btnCloseNoiseEditor" style="cursor: pointer;"></div>
+          <div class="traffic-dot minimize"></div>
+          <div class="traffic-dot zoom"></div>
+        </div>
+        <div class="modal-title">Brice3D — Heightmap Noise Painter Editor</div>
+        <div></div>
+      </div>
+
+      <div class="modal-body">
+        <!-- 2D Heightmap Canvas -->
+        <div class="canvas-editor-container">
+          <canvas id="heightmapCanvas"></canvas>
+          <div style="font-size: 10px; color: #64748b; font-weight: 600;">White = Mountain Peaks | Gray = Hills | Black = Ocean</div>
+        </div>
+
+        <!-- Brush Tools & Controls -->
+        <div class="editor-tools-panel">
+          <div class="tool-section-title">Brush Mode</div>
+          <div class="btn-group">
+            <button class="metal-btn btn-primary active" id="btnToolRaise">⚪ Raise Peak (White)</button>
+            <button class="metal-btn" id="btnToolLower">⬛ Lower Valley (Black)</button>
+            <button class="metal-btn" id="btnToolSmooth">🌫️ Smooth Blur</button>
+          </div>
+
+          <div class="tool-section-title" style="margin-top: 8px;">Brush Parameters</div>
+          <div class="control-row">
+            <div class="control-label"><span>Brush Radius</span><span class="val" id="valBrushSize">25px</span></div>
+            <input type="range" class="metal-range" id="brushSizeSlider" min="5" max="60" step="1" value="25">
+          </div>
+          <div class="control-row">
+            <div class="control-label"><span>Brush Strength</span><span class="val" id="valBrushStrength">0.25</span></div>
+            <input type="range" class="metal-range" id="brushStrengthSlider" min="0.05" max="0.8" step="0.05" value="0.25">
+          </div>
+
+          <div class="tool-section-title" style="margin-top: 8px;">Global Filters</div>
+          <div class="btn-group">
+            <button class="metal-btn" id="btnInvertHeight">🔄 Invert Height</button>
+            <button class="metal-btn" id="btnSmoothAll">🌫️ Smooth All</button>
+          </div>
+          <button class="metal-btn btn-amber" id="btnResetNoise" style="width: 100%; margin-top: 4px;">🎲 Reset Procedural Noise</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script type="module" src="js/app.js"></script>
 </body>

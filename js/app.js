@@ -1,29 +1,35 @@
 /**
- * KPT Bryce 1.0 Main Application Controller
+ * Brice3D — Main Entry Point
+ * Initializes WebGL2 Raytracer, KPT Tactile UI, Canvas View Controller, and 2D Heightmap Noise Editor.
  */
 
 import { WebGLRenderer } from './engine/webgl-renderer.js';
 import { KptUIManager } from './ui/kpt-ui.js';
 import { CanvasViewController } from './ui/canvas-view.js';
+import { NoiseEditor } from './ui/noise-editor.js';
 
-document.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', () => {
   const canvas = document.getElementById('renderCanvas');
   if (!canvas) return;
 
   const renderer = new WebGLRenderer(canvas);
-  
-  const canvasController = new CanvasViewController(canvas, renderer);
-
+  const canvasViewController = new CanvasViewController(renderer);
   const uiManager = new KptUIManager(renderer, () => {
-    // Reset progressive scanline on property change if in scanline mode
-    if (renderer.state.renderMode === 1) {
-      renderer.resetScanline();
-      canvasController.renderStartTime = performance.now();
-    }
+    canvasViewController.triggerRender();
   });
 
-  // Start Engine Render Loop with callback for metrics
-  renderer.startRenderLoop((percent) => {
-    canvasController.updateMetrics(percent);
+  const noiseEditor = new NoiseEditor(renderer, () => {
+    canvasViewController.triggerRender();
   });
+
+  const parent = canvas.parentElement;
+  if (parent) {
+    renderer.resizeCanvas(parent.clientWidth, parent.clientHeight);
+    window.addEventListener('resize', () => {
+      renderer.resizeCanvas(parent.clientWidth, parent.clientHeight);
+      canvasViewController.triggerRender();
+    });
+  }
+
+  canvasViewController.triggerRender();
 });
