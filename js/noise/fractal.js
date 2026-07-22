@@ -86,15 +86,39 @@ export class FractalGenerator {
     );
   }
 
+  // Blends a noise sample with its period-shifted twin so the value at one
+  // tile edge exactly matches the value at the opposite edge, letting the
+  // baked heightmap tile seamlessly under GL_REPEAT (Infinite Endless Mode).
+  tileableNoise(x, z, frequency, period) {
+    const span = period * frequency;
+    const px = (x + period * 0.5) * frequency;
+    const pz = (z + period * 0.5) * frequency;
+    const u = this.fade(Math.min(1, Math.max(0, px / span)));
+    const v = this.fade(Math.min(1, Math.max(0, pz / span)));
+
+    const n00 = this.noise(px, pz, 0.5);
+    const n10 = this.noise(px - span, pz, 0.5);
+    const n01 = this.noise(px, pz - span, 0.5);
+    const n11 = this.noise(px - span, pz - span, 0.5);
+
+    return this.lerp(this.lerp(n00, n10, u), this.lerp(n01, n11, u), v);
+  }
+
+  sampleOctave(x, z, frequency, tileable, period) {
+    return tileable
+      ? this.tileableNoise(x, z, frequency, period)
+      : this.noise(x * frequency, z * frequency, 0.5);
+  }
+
   // 1. Standard fBm (Rolling Hills)
-  fBm(x, z, octaves = 6, lacunarity = 2.0, gain = 0.48) {
+  fBm(x, z, octaves = 6, lacunarity = 2.0, gain = 0.48, tileable = false, period = 0) {
     let total = 0;
     let frequency = 1.0;
     let amplitude = 1.0;
     let maxVal = 0;
 
     for (let i = 0; i < octaves; i++) {
-      total += this.noise(x * frequency, z * frequency, 0.5) * amplitude;
+      total += this.sampleOctave(x, z, frequency, tileable, period) * amplitude;
       maxVal += amplitude;
       frequency *= lacunarity;
       amplitude *= gain;
@@ -104,14 +128,14 @@ export class FractalGenerator {
   }
 
   // 2. Ridged Multifractal (Razor-sharp Spire Crags & Alpine Peaks)
-  ridgedfBm(x, z, octaves = 7, lacunarity = 2.0, gain = 0.5) {
+  ridgedfBm(x, z, octaves = 7, lacunarity = 2.0, gain = 0.5, tileable = false, period = 0) {
     let total = 0;
     let frequency = 1.0;
     let amplitude = 1.0;
     let weight = 1.0;
 
     for (let i = 0; i < octaves; i++) {
-      let signal = Math.abs(this.noise(x * frequency, z * frequency, 0.5));
+      let signal = Math.abs(this.sampleOctave(x, z, frequency, tileable, period));
       signal = 1.0 - signal;
       signal *= signal;
       signal *= weight;
@@ -126,16 +150,18 @@ export class FractalGenerator {
   }
 
   // 3. Volcanic Caldera (Dramatic Ring Crater Island)
-  volcanicfBm(x, z, octaves = 7) {
+  volcanicfBm(x, z, octaves = 7, tileable = false, period = 0) {
+    // dist is symmetric about the tile center, so the ring term already
+    // matches at opposite tile edges without needing the blend trick.
     const dist = Math.sqrt(x * x + z * z);
     const ring = Math.sin(dist * 3.5) * Math.exp(-dist * 0.7);
-    const base = this.fBm(x, z, octaves);
+    const base = this.fBm(x, z, octaves, 2.0, 0.48, tileable, period);
     return base * 0.4 + ring * 0.8;
   }
 
   // 4. Terraced Grand Canyon (Step Mesas & Flat Tops)
-  terracedfBm(x, z, octaves = 7, steps = 7) {
-    const h = (this.fBm(x, z, octaves) + 1.0) * 0.5;
+  terracedfBm(x, z, octaves = 7, steps = 7, tileable = false, period = 0) {
+    const h = (this.fBm(x, z, octaves, 2.0, 0.48, tileable, period) + 1.0) * 0.5;
     const stepH = Math.floor(h * steps) / steps;
     const frac = (h * steps) - Math.floor(h * steps);
     const smoothFrac = Math.pow(frac, 3.5);
@@ -143,22 +169,26 @@ export class FractalGenerator {
   }
 
   // 5. Needle Spires (Dramatic Towering Granite Pillars)
-  spirefBm(x, z, octaves = 7) {
-    const h = Math.max(0.0, (this.fBm(x, z, octaves) + 1.0) * 0.5);
+  spirefBm(x, z, octaves = 7, tileable = false, period = 0) {
+    const h = Math.max(0.0, (this.fBm(x, z, octaves, 2.0, 0.48, tileable, period) + 1.0) * 0.5);
     return (Math.pow(h, 3.0) * 2.4) - 0.6;
   }
 
   // Gaussian Smoothing Filter Pass
-  applyGaussianSmoothing(heights, size, passes = 1) {
+  // `tileable` wraps the blur kernel at the edges instead of clamping, so it
+  // doesn't reintroduce a seam by duplicating edge pixels.
+  applyGaussianSmoothing(heights, size, passes = 1, tileable = false) {
     const temp = new Float32Array(size * size);
-    
+    const wrap = (v) => ((v % size) + size) % size;
+    const edgeIndex = tileable ? wrap : (v) => Math.min(size - 1, Math.max(0, v));
+
     for (let p = 0; p < passes; p++) {
       for (let z = 0; z < size; z++) {
         for (let x = 0; x < size; x++) {
           let sum = 0;
           let weightSum = 0;
           for (let dx = -2; dx <= 2; dx++) {
-            const nx = Math.min(size - 1, Math.max(0, x + dx));
+            const nx = edgeIndex(x + dx);
             const w = dx === 0 ? 0.4 : (Math.abs(dx) === 1 ? 0.24 : 0.06);
             sum += heights[z * size + nx] * w;
             weightSum += w;
@@ -172,7 +202,7 @@ export class FractalGenerator {
           let sum = 0;
           let weightSum = 0;
           for (let dz = -2; dz <= 2; dz++) {
-            const nz = Math.min(size - 1, Math.max(0, z + dz));
+            const nz = edgeIndex(z + dz);
             const w = dz === 0 ? 0.4 : (Math.abs(dz) === 1 ? 0.24 : 0.06);
             sum += temp[nz * size + x] * w;
             weightSum += w;
@@ -191,7 +221,8 @@ export class FractalGenerator {
     seedVal = 1337,
     smoothingAmount = 0.5,
     terrainStyle = 1,
-    steepness = 1.25
+    steepness = 1.25,
+    tileable = false
   ) {
     this.seed(seedVal);
     const rawHeights = new Float32Array(size * size);
@@ -205,15 +236,15 @@ export class FractalGenerator {
 
         let h = 0;
         if (terrainStyle === 1) {
-          h = this.ridgedfBm(nx, nz, octaves);
+          h = this.ridgedfBm(nx, nz, octaves, 2.0, 0.5, tileable, scale);
         } else if (terrainStyle === 2) {
-          h = this.volcanicfBm(nx, nz, octaves);
+          h = this.volcanicfBm(nx, nz, octaves, tileable, scale);
         } else if (terrainStyle === 3) {
-          h = this.terracedfBm(nx, nz, octaves);
+          h = this.terracedfBm(nx, nz, octaves, 7, tileable, scale);
         } else if (terrainStyle === 4) {
-          h = this.spirefBm(nx, nz, octaves);
+          h = this.spirefBm(nx, nz, octaves, tileable, scale);
         } else {
-          h = this.fBm(nx, nz, octaves);
+          h = this.fBm(nx, nz, octaves, 2.0, 0.48, tileable, scale);
         }
 
         if (h < minH) minH = h;
@@ -232,7 +263,7 @@ export class FractalGenerator {
 
     const blurPasses = Math.round(smoothingAmount * 1.5);
     if (blurPasses > 0 && terrainStyle !== 1) {
-      this.applyGaussianSmoothing(rawHeights, size, blurPasses);
+      this.applyGaussianSmoothing(rawHeights, size, blurPasses, tileable);
     }
 
     const data = new Uint8Array(size * size * 4);

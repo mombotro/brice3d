@@ -53,6 +53,7 @@ uniform float u_meshQuality;
 uniform float u_meshSmoothing;
 uniform int u_terrainDomainMode; // 0: Bounded Island/Coast, 1: Infinite Continent
 uniform int u_paletteMode;
+uniform float u_vegetationAmount; // 0: bare rock, 1: default coverage, 2: lush green
 
 // Sphere Primitive Uniforms
 uniform int u_showSphere;
@@ -233,15 +234,21 @@ vec3 getTerrainColor(vec3 pos, vec3 normal) {
 
     vec3 col = grass;
 
+    // Slider shifts the slope cutoff for grass vs. bare rock, only below the
+    // snowline, so it doesn't touch how much snow the peaks carry.
+    float slopeCutoff = clamp(0.68 - (u_vegetationAmount - 1.0) * 0.35, 0.15, 0.90);
+
     if (height < u_waterLevel + 0.1) {
         col = sand;
-    } else {
+    } else if (height > u_terrainHeight * 0.5) {
         if (slope < 0.68) {
             col = rock;
-        } else if (height > u_terrainHeight * 0.5) {
+        } else {
             float snowFactor = smoothstep(u_terrainHeight * 0.5, u_terrainHeight * 0.75, height);
             col = mix(rock, snow, snowFactor);
         }
+    } else {
+        col = (slope < slopeCutoff) ? rock : grass;
     }
     return col;
 }

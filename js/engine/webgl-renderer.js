@@ -60,6 +60,7 @@ export class WebGLRenderer {
       terrainStyle: 1, // 0: Rolling, 1: Razor Peaks, 2: Volcano, 3: Canyon, 4: Spires
       steepness: 1.25,
       paletteMode: 0,
+      vegetationAmount: 1.0, // 0: bare rock, 1: default coverage, 2: lush green
 
       showSphere: 1,
       spherePos: [1.2, 2.2, 2.0],
@@ -102,6 +103,7 @@ export class WebGLRenderer {
       'u_drawDistance', 'u_fogDensity', 'u_fogColor',
       'u_waterLevel', 'u_waterColor', 'u_waterReflectivity',
       'u_terrainScale', 'u_terrainHeight', 'u_meshQuality', 'u_meshSmoothing', 'u_terrainDomainMode', 'u_paletteMode',
+      'u_vegetationAmount',
       'u_showSphere', 'u_spherePos', 'u_sphereRadius', 'u_sphereReflectivity',
       'u_renderMode', 'u_scanlineY', 'u_heightmap'
     ];
@@ -157,7 +159,8 @@ export class WebGLRenderer {
       this.state.seed,
       this.state.meshSmoothing,
       this.state.terrainStyle,
-      this.state.steepness
+      this.state.steepness,
+      this.state.terrainDomainMode === 1
     );
 
     if (this.heightTexture) gl.deleteTexture(this.heightTexture);
@@ -238,6 +241,7 @@ export class WebGLRenderer {
     gl.uniform1f(this.uniforms.u_meshSmoothing, s.meshSmoothing);
     gl.uniform1i(this.uniforms.u_terrainDomainMode, s.terrainDomainMode);
     gl.uniform1i(this.uniforms.u_paletteMode, s.paletteMode);
+    gl.uniform1f(this.uniforms.u_vegetationAmount, s.vegetationAmount);
 
     gl.uniform1i(this.uniforms.u_showSphere, s.showSphere);
     gl.uniform3fv(this.uniforms.u_spherePos, s.spherePos);

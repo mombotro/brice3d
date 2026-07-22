@@ -50,8 +50,8 @@ export class KptUIManager {
         const nx = ((e.clientX - rect.left) / rect.width - 0.5) * 2.0;
         const ny = ((e.clientY - rect.top) / rect.height - 0.5) * 2.0;
 
-        this.camAzimuth = nx * 180.0;
-        this.camElevation = Math.max(-25, Math.min(85, -ny * 65.0));
+        this.camAzimuth = nx * 100.0;
+        this.camElevation = Math.max(-25, Math.min(85, -ny * 38.0));
 
         camHandle.style.transform = `translate(${nx * 24}px, ${ny * 24}px)`;
 
@@ -244,6 +244,17 @@ export class KptUIManager {
         this.renderer.state.meshSmoothing = val;
         if (valMeshSmoothing) valMeshSmoothing.textContent = val.toFixed(2);
         this.renderer.regenerateHeightmap();
+        if (this.onStateChange) this.onStateChange();
+      });
+    }
+
+    const vegetationSlider = document.getElementById('vegetationSlider');
+    const valVegetation = document.getElementById('valVegetation');
+    if (vegetationSlider) {
+      vegetationSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        this.renderer.state.vegetationAmount = val;
+        if (valVegetation) valVegetation.textContent = val.toFixed(2);
         if (this.onStateChange) this.onStateChange();
       });
     }
@@ -523,6 +534,7 @@ export class KptUIManager {
     updateVal('sphereReflectSlider', s.sphereReflectivity, 'valSphereReflect', 2);
     updateVal('sunIntensitySlider', s.sunIntensity, 'valSunIntensity', 2);
     updateVal('sunSizeSlider', s.sunSize, 'valSunSize', 2);
+    updateVal('vegetationSlider', s.vegetationAmount, 'valVegetation', 2);
 
     const terrainStyleSelect = document.getElementById('terrainStyleSelect');
     if (terrainStyleSelect) terrainStyleSelect.value = s.terrainStyle;
