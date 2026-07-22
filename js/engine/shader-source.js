@@ -234,17 +234,22 @@ vec3 getTerrainColor(vec3 pos, vec3 normal) {
 
     vec3 col = grass;
 
-    // Slider shifts the slope cutoff for grass vs. bare rock, only below the
-    // snowline, so it doesn't touch how much snow the peaks carry.
-    float slopeCutoff = clamp(0.68 - (u_vegetationAmount - 1.0) * 0.35, 0.15, 0.90);
+    // Vegetation slider (0..2, default 1) sets both how far up the peak
+    // green climbs before the snowline starts, and how much grass wins over
+    // bare rock on slopes below that line. At 2.0 the snowline sits above
+    // any reachable height, so the whole peak goes green.
+    float vegT = clamp(u_vegetationAmount, 0.0, 2.0);
+    float snowlineFactor = vegT <= 1.0 ? mix(0.15, 0.5, vegT) : mix(0.5, 3.0, vegT - 1.0);
+    float snowlineHeight = u_terrainHeight * snowlineFactor;
+    float slopeCutoff = clamp(0.68 - (vegT - 1.0) * 0.35, 0.15, 0.90);
 
     if (height < u_waterLevel + 0.1) {
         col = sand;
-    } else if (height > u_terrainHeight * 0.5) {
+    } else if (height > snowlineHeight) {
         if (slope < 0.68) {
             col = rock;
         } else {
-            float snowFactor = smoothstep(u_terrainHeight * 0.5, u_terrainHeight * 0.75, height);
+            float snowFactor = smoothstep(snowlineHeight, snowlineHeight * 1.5, height);
             col = mix(rock, snow, snowFactor);
         }
     } else {
@@ -258,12 +263,20 @@ vec3 renderSky(vec3 rd) {
     float skyHeight = max(rd.y, 0.0);
 
     vec3 sky = mix(u_skyColorHorizon, u_skyColorZenith, pow(skyHeight, 0.6));
-    
+
     float discThreshold = 1.0 - (0.003 * u_sunSize);
     float sunDisc = smoothstep(discThreshold - 0.001, discThreshold, sunDot);
     float sunGlow = pow(sunDot, 16.0 / u_sunSize) * 0.8 + pow(sunDot, 64.0 / u_sunSize) * 1.5;
-    
-    return sky + u_sunColor * u_sunIntensity * (sunDisc * 3.0 + sunGlow);
+
+    sky += u_sunColor * u_sunIntensity * (sunDisc * 3.0 + sunGlow);
+
+    // Atmospheric haze band hugging the horizon, driven by the same fog
+    // density/color as distant terrain so the sky and faded-out land match
+    // instead of showing a hard edge where terrain fog meets clear sky.
+    float hazeBand = exp(-abs(rd.y) * mix(10.0, 2.0, clamp(u_fogDensity, 0.0, 1.0)));
+    sky = mix(sky, u_fogColor, hazeBand * clamp(u_fogDensity, 0.0, 1.0) * 0.85);
+
+    return sky;
 }
 
 void main() {
