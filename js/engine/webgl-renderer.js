@@ -53,7 +53,8 @@ export class WebGLRenderer {
       terrainHeight: 3.2,
       octaves: 7,
       meshQuality: 1.0,
-      terrainDomainMode: 0, // 0: Bounded Island/Coast, 1: Infinite Continent
+      meshSmoothing: 1.0, // Mesh smoothing factor (0.1 to 3.0)
+      terrainDomainMode: 0,
       paletteMode: 0,
 
       showSphere: 1,
@@ -96,7 +97,7 @@ export class WebGLRenderer {
       'u_skyColorHorizon', 'u_skyColorZenith',
       'u_drawDistance', 'u_fogDensity', 'u_fogColor',
       'u_waterLevel', 'u_waterColor', 'u_waterReflectivity',
-      'u_terrainScale', 'u_terrainHeight', 'u_meshQuality', 'u_terrainDomainMode', 'u_paletteMode',
+      'u_terrainScale', 'u_terrainHeight', 'u_meshQuality', 'u_meshSmoothing', 'u_terrainDomainMode', 'u_paletteMode',
       'u_showSphere', 'u_spherePos', 'u_sphereRadius', 'u_sphereReflectivity',
       'u_renderMode', 'u_scanlineY', 'u_heightmap'
     ];
@@ -142,7 +143,7 @@ export class WebGLRenderer {
 
   initHeightmapTexture() {
     const gl = this.gl;
-    const texSize = this.state.meshQuality > 1.2 ? 1024 : 512;
+    const texSize = 512;
     const octs = Math.min(8, Math.max(4, Math.floor(this.state.octaves * this.state.meshQuality)));
 
     const { data, size } = this.fractalGen.generateHeightmapTexture(texSize, octs, 2.5, this.state.seed);
@@ -222,6 +223,7 @@ export class WebGLRenderer {
     gl.uniform1f(this.uniforms.u_terrainScale, s.terrainScale);
     gl.uniform1f(this.uniforms.u_terrainHeight, s.terrainHeight);
     gl.uniform1f(this.uniforms.u_meshQuality, s.meshQuality);
+    gl.uniform1f(this.uniforms.u_meshSmoothing, s.meshSmoothing);
     gl.uniform1i(this.uniforms.u_terrainDomainMode, s.terrainDomainMode);
     gl.uniform1i(this.uniforms.u_paletteMode, s.paletteMode);
 

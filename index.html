@@ -123,9 +123,9 @@
         <button class="metal-btn" id="btnRerender" style="width: 100%; margin-top: 4px;">↻ Re-render Scene</button>
       </section>
 
-      <!-- Terrain Procedural Sliders, Seed & Mesh Quality -->
+      <!-- Terrain Procedural Sliders, Seed & Mesh Smoothing -->
       <section class="panel-section">
-        <div class="panel-title">Fractal Terrain & Mesh Quality</div>
+        <div class="panel-title">Fractal Terrain & Smoothing</div>
         <select id="terrainDomainSelect" class="metal-select" style="margin-bottom: 10px;">
           <option value="0" selected>Bounded Island / Coast (Coastal Mode)</option>
           <option value="1">Infinite Endless Mountain (Endless Mode)</option>
@@ -133,6 +133,10 @@
         <div style="display: flex; gap: 6px; margin-bottom: 10px;">
           <button class="metal-btn btn-primary" id="btnRandomSeed" style="flex: 1;">🎲 Random Seed</button>
           <input type="number" id="inputSeed" class="metal-input" value="1337">
+        </div>
+        <div class="control-row">
+          <div class="control-label"><span>Mesh Smoothing</span><span class="val" id="valMeshSmoothing">1.00</span></div>
+          <input type="range" class="metal-range" id="meshSmoothingSlider" min="0.1" max="3.0" step="0.05" value="1.0">
         </div>
         <div class="control-row">
           <div class="control-label"><span>Mesh Detail Quality</span><span class="val" id="valMeshQuality">1.00</span></div>

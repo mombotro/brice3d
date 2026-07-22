@@ -1,6 +1,6 @@
 /**
  * KPT Bryce 1.0 WebGL2 Raymarching & Heightfield GLSL Shader Suite
- * Supports Bounded Island/Coast Mode & Infinite Endless Mountain Mode.
+ * Smooth 16-Bit Bicubic Quintic Heightmap Interpolation & Mesh Smoothing.
  */
 
 export const VERTEX_SHADER_SOURCE = `#version 300 es
@@ -46,10 +46,11 @@ uniform float u_waterLevel;
 uniform vec3 u_waterColor;
 uniform float u_waterReflectivity;
 
-// Terrain & Mesh Quality Uniforms
+// Terrain & Mesh Smoothing Uniforms
 uniform float u_terrainScale;
 uniform float u_terrainHeight;
 uniform float u_meshQuality;
+uniform float u_meshSmoothing; // Mesh smoothing factor (0.1 to 3.0)
 uniform int u_terrainDomainMode; // 0: Bounded Island/Coast, 1: Infinite Continent
 uniform int u_paletteMode;
 
@@ -77,35 +78,64 @@ float valueNoise2D(vec2 p) {
                mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), u.x), u.y);
 }
 
-// Terrain Height Function (Island vs Infinite)
+// Decode 16-Bit Heightmap Value from RG Channels
+float decodeHeight16(vec2 uv) {
+    vec4 tex = texture(u_heightmap, uv);
+    return (tex.r * 255.0 * 256.0 + tex.g * 255.0) / 65535.0;
+}
+
+// Smooth Bicubic Quintic Heightmap Interpolation (65,536 height levels)
+float sampleSmoothHeightmap(vec2 uv) {
+    float texSize = 512.0;
+    vec2 texel = vec2(1.0 / texSize);
+    vec2 pos = uv * texSize - 0.5;
+    vec2 f = fract(pos);
+    vec2 i = floor(pos);
+
+    // Quintic Hermite Curve for C2 continuous surface smoothing
+    vec2 w = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+
+    vec2 uv00 = (i + vec2(0.5, 0.5)) * texel;
+    vec2 uv10 = (i + vec2(1.5, 0.5)) * texel;
+    vec2 uv01 = (i + vec2(0.5, 1.5)) * texel;
+    vec2 uv11 = (i + vec2(1.5, 1.5)) * texel;
+
+    float h00 = decodeHeight16(uv00);
+    float h10 = decodeHeight16(uv10);
+    float h01 = decodeHeight16(uv01);
+    float h11 = decodeHeight16(uv11);
+
+    return mix(mix(h00, h10, w.x), mix(h01, h11, w.x), w.y);
+}
+
+// Terrain Height Function (Smooth Surface Evaluation)
 float getTerrainHeight(vec2 p) {
     if (u_terrainDomainMode == 0) { // Bounded Island / Coast Mode
         vec2 uv = p * 0.04 * u_terrainScale + 0.5;
         if (uv.x < 0.0 || uv.x > 1.0 || uv.y < 0.0 || uv.y > 1.0) return 0.0;
 
-        float baseH = texture(u_heightmap, uv).r;
+        float baseH = sampleSmoothHeightmap(uv);
 
-        // Smooth radial edge falloff so terrain slopes into the ocean
         vec2 centerDist = (uv - 0.5) * 2.0;
         float edgeDist = length(centerDist);
         float edgeFalloff = smoothstep(0.98, 0.35, edgeDist);
 
         float microDetail = 0.0;
         if (u_meshQuality > 0.05) {
-            float n1 = valueNoise2D(p * 0.8) * 0.12;
-            float n2 = valueNoise2D(p * 3.5) * 0.04;
+            float n1 = valueNoise2D(p * 0.8) * 0.08;
+            float n2 = valueNoise2D(p * 3.5) * 0.025;
             microDetail = (n1 + n2) * u_meshQuality;
         }
 
         return (baseH * edgeFalloff + microDetail * edgeFalloff) * u_terrainHeight;
     } else { // Infinite Endless Continent Mode
         vec2 uv = fract(p * 0.03 * u_terrainScale);
-        float baseH = texture(u_heightmap, uv).r;
+        float baseH = sampleSmoothHeightmap(uv);
 
         float microDetail = 0.0;
         if (u_meshQuality > 0.05) {
-            float n1 = valueNoise2D(p * 0.8) * 0.12;
-            float n2 = valueNoise2D(p * 3.5) * 0.04;
+            float n1 = valueNoise2D(p * 0.8) * 0.08;
+            float n2 = valueNoise2D(p * 3.5) * 0.025;
             microDetail = (n1 + n2) * u_meshQuality;
         }
 
@@ -113,8 +143,9 @@ float getTerrainHeight(vec2 p) {
     }
 }
 
+// Smooth Normal Calculation with Dynamic Smoothing Step (eps)
 vec3 getTerrainNormal(vec2 p) {
-    float eps = 0.03;
+    float eps = 0.04 * u_meshSmoothing;
     float h = getTerrainHeight(p);
     float hx = getTerrainHeight(p + vec2(eps, 0.0));
     float hz = getTerrainHeight(p + vec2(0.0, eps));

@@ -1,6 +1,6 @@
 /**
  * KPT Bryce 1.0 Tactile UI Manager
- * Handles 3D Trackballs, Color Combos, Terrain Domain (Island vs Infinite), Seed Generation, Mesh Detail Quality, and Render Scaling.
+ * Handles 3D Trackballs, Color Combos, Terrain Domain, Seed Generation, Mesh Detail & Smoothing, and Render Scaling.
  */
 
 export class KptUIManager {
@@ -158,7 +158,7 @@ export class KptUIManager {
       });
     }
 
-    // 4. Draw Distance & Mesh Detail Quality Sliders
+    // 4. Draw Distance, Mesh Detail Quality & Mesh Smoothing Sliders
     const drawDistanceSlider = document.getElementById('drawDistanceSlider');
     const valDrawDistance = document.getElementById('valDrawDistance');
     if (drawDistanceSlider) {
@@ -178,6 +178,17 @@ export class KptUIManager {
         this.renderer.state.meshQuality = val;
         if (valMeshQuality) valMeshQuality.textContent = val.toFixed(2);
         this.renderer.regenerateHeightmap();
+        if (this.onStateChange) this.onStateChange();
+      });
+    }
+
+    const meshSmoothingSlider = document.getElementById('meshSmoothingSlider');
+    const valMeshSmoothing = document.getElementById('valMeshSmoothing');
+    if (meshSmoothingSlider) {
+      meshSmoothingSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        this.renderer.state.meshSmoothing = val;
+        if (valMeshSmoothing) valMeshSmoothing.textContent = val.toFixed(2);
         if (this.onStateChange) this.onStateChange();
       });
     }
@@ -316,6 +327,7 @@ export class KptUIManager {
         terrainScale: 0.8,
         terrainHeight: 3.2,
         meshQuality: 1.0,
+        meshSmoothing: 1.0,
         terrainDomainMode: 0,
         paletteMode: 0,
         showSphere: 1,
@@ -342,6 +354,7 @@ export class KptUIManager {
         terrainScale: 1.0,
         terrainHeight: 2.8,
         meshQuality: 1.2,
+        meshSmoothing: 1.2,
         terrainDomainMode: 0,
         paletteMode: 1,
         showSphere: 1,
@@ -368,6 +381,7 @@ export class KptUIManager {
         terrainScale: 0.7,
         terrainHeight: 4.0,
         meshQuality: 1.5,
+        meshSmoothing: 0.8,
         terrainDomainMode: 1,
         paletteMode: 2,
         showSphere: 1,
@@ -394,6 +408,7 @@ export class KptUIManager {
         terrainScale: 0.9,
         terrainHeight: 3.5,
         meshQuality: 1.0,
+        meshSmoothing: 1.0,
         terrainDomainMode: 1,
         paletteMode: 3,
         showSphere: 0,
@@ -427,6 +442,7 @@ export class KptUIManager {
     updateVal('terrainScaleSlider', s.terrainScale, 'valTerrainScale');
     updateVal('drawDistanceSlider', s.drawDistance, 'valDrawDistance');
     updateVal('meshQualitySlider', s.meshQuality, 'valMeshQuality');
+    updateVal('meshSmoothingSlider', s.meshSmoothing, 'valMeshSmoothing');
     updateVal('fogDensitySlider', s.fogDensity, 'valFogDensity');
     updateVal('waterLevelSlider', s.waterLevel, 'valWaterLevel');
     updateVal('waterReflectSlider', s.waterReflectivity, 'valWaterReflect');
