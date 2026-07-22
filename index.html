@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brice3D — Mac OS X Edition</title>
+  
+  <!-- Modern Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Mac OS X Window Title Bar -->
+  <header class="kpt-header">
+    <div class="macosx-traffic-lights">
+      <div class="traffic-dot close"></div>
+      <div class="traffic-dot minimize"></div>
+      <div class="traffic-dot zoom"></div>
+    </div>
+    
+    <div class="kpt-logo">
+      <div class="kpt-logo-icon"></div>
+      <div>
+        <div class="kpt-logo-title">Brice3D</div>
+        <div class="kpt-logo-subtitle">Fractal 3D Raytracer • Based on KPT Bryce 1.0 (1994)</div>
+      </div>
+    </div>
+
+    <div class="header-status">
+      <div class="led-indicator"><div class="led-dot active-cyan"></div> Ray Engine</div>
+      <div class="led-indicator"><div class="led-dot active-emerald"></div> WebGL2 GPU</div>
+      <div class="led-indicator"><div class="led-dot active-amber"></div> Volumetrics</div>
+    </div>
+  </header>
+
+  <!-- Workspace Main View -->
+  <main class="kpt-workspace">
+
+    <!-- Left Controls Panel -->
+    <aside class="kpt-panel">
+      <!-- Trackball Orbs Section -->
+      <section class="panel-section">
+        <div class="panel-title">
+          3D Navigation Orbs
+          <span class="badge">TACTILE</span>
+        </div>
+        <div class="trackball-container">
+          <div class="trackball-wrapper">
+            <div class="trackball-orb" id="cameraTrackball">
+              <div class="orb-grid"></div>
+              <div class="orb-handle" id="cameraOrbHandle"></div>
+            </div>
+            <div class="trackball-label">CAMERA ORBIT</div>
+          </div>
+          <div class="trackball-wrapper">
+            <div class="trackball-orb" id="sunTrackball">
+              <div class="orb-grid"></div>
+              <div class="orb-handle sun-handle" id="sunOrbHandle"></div>
+            </div>
+            <div class="trackball-label">SUN POSITION</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Presets & Render Modes -->
+      <section class="panel-section">
+        <div class="panel-title">Scene Presets</div>
+        <select id="presetSelect" class="metal-select">
+          <option value="sunset">Classic Bryce Sunset Mountain</option>
+          <option value="emerald">Emerald Island Archipelago</option>
+          <option value="alien">Alien Crystal Canyons</option>
+          <option value="gold">Golden Desert Peaks</option>
+        </select>
+      </section>
+
+      <!-- Performance & Render Quality Scaling -->
+      <section class="panel-section">
+        <div class="panel-title">Performance & Quality</div>
+        <select id="renderScaleSelect" class="metal-select" style="margin-bottom: 8px;">
+          <option value="1.0">Ultra Quality (100% Native Resolution)</option>
+          <option value="0.75" selected>High Performance (75% Res - Recommended)</option>
+          <option value="0.50">Balanced Speed (50% Res - Fast)</option>
+          <option value="0.35">Maximum Speed (35% Res - Ultra Fast)</option>
+        </select>
+        <div class="btn-group">
+          <button class="metal-btn btn-primary active" id="btnRealtime">⚡ 60FPS Live</button>
+          <button class="metal-btn btn-amber" id="btnProgressive">🎞️ 1994 Scanline</button>
+        </div>
+        <button class="metal-btn" id="btnRerender" style="width: 100%; margin-top: 4px;">↻ Re-render Scene</button>
+      </section>
+
+      <!-- Terrain Procedural Sliders -->
+      <section class="panel-section">
+        <div class="panel-title">Fractal Terrain</div>
+        <div class="control-row">
+          <div class="control-label"><span>Height Scale</span><span class="val" id="valTerrainHeight">3.20</span></div>
+          <input type="range" class="metal-range" id="terrainHeightSlider" min="0.5" max="6.0" step="0.1" value="3.2">
+        </div>
+        <div class="control-row">
+          <div class="control-label"><span>Noise Scale</span><span class="val" id="valTerrainScale">0.80</span></div>
+          <input type="range" class="metal-range" id="terrainScaleSlider" min="0.2" max="2.0" step="0.05" value="0.8">
+        </div>
+      </section>
+    </aside>
+
+    <!-- Center Canvas Viewport -->
+    <section class="viewport-container">
+      <div class="viewport-hud">
+        <div class="hud-item"><span class="lbl">FPS:</span><span id="hudFps">60 FPS</span></div>
+        <div class="hud-item"><span class="lbl">TIME:</span><span id="hudRenderTime">0.0s</span></div>
+        <div class="hud-item"><span class="lbl">ENGINE:</span><span>Brice3D WebGL Raytracer</span></div>
+      </div>
+
+      <div class="viewport-canvas-wrapper">
+        <canvas id="renderCanvas"></canvas>
+        <div class="scanline-overlay"></div>
+      </div>
+
+      <!-- Render Status & Progress Bar -->
+      <div class="render-status-bar">
+        <div class="progress-track">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-text" id="progressText">MODE: REAL-TIME (60 FPS)</div>
+        <button class="metal-btn btn-primary" id="btnExport">💾 Save PNG</button>
+      </div>
+    </section>
+
+    <!-- Right Controls Panel -->
+    <aside class="kpt-panel panel-right">
+      <!-- Atmospheric Volumetrics -->
+      <section class="panel-section">
+        <div class="panel-title">Atmosphere & Fog</div>
+        <div class="control-row">
+          <div class="control-label"><span>Fog Haze Density</span><span class="val" id="valFogDensity">0.40</span></div>
+          <input type="range" class="metal-range" id="fogDensitySlider" min="0.0" max="1.0" step="0.02" value="0.4">
+        </div>
+      </section>
+
+      <!-- Infinite Water Plane -->
+      <section class="panel-section">
+        <div class="panel-title">Infinite Water Plane</div>
+        <div class="control-row">
+          <div class="control-label"><span>Water Height Level</span><span class="val" id="valWaterLevel">0.60</span></div>
+          <input type="range" class="metal-range" id="waterLevelSlider" min="0.0" max="2.5" step="0.05" value="0.6">
+        </div>
+        <div class="control-row">
+          <div class="control-label"><span>Mirror Reflectivity</span><span class="val" id="valWaterReflect">0.65</span></div>
+          <input type="range" class="metal-range" id="waterReflectSlider" min="0.0" max="1.0" step="0.05" value="0.65">
+        </div>
+      </section>
+
+      <!-- Sphere Primitive -->
+      <section class="panel-section">
+        <div class="panel-title">Chrome Primitive Sphere</div>
+        <div class="control-row">
+          <div class="control-label"><span>Sphere Reflectivity</span><span class="val" id="valSphereReflect">0.95</span></div>
+          <input type="range" class="metal-range" id="sphereReflectSlider" min="0.0" max="1.0" step="0.05" value="0.95">
+        </div>
+      </section>
+    </aside>
+
+  </main>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,490 @@
+/* Brice3D — Authentic Mac OS X (Aqua / Titanium) Design System */
+
+:root {
+  --aqua-bg: #dbe0e6;
+  --aqua-metal: linear-gradient(180deg, #f0f2f5 0%, #d8dce2 50%, #c4cbd4 51%, #e0e5eb 100%);
+  --panel-bg: #e6eaef;
+  --panel-border: #abb3bf;
+  --pinstripe: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.4) 0px,
+    rgba(255, 255, 255, 0.4) 1px,
+    transparent 1px,
+    transparent 2px
+  );
+
+  /* Mac OS X Aqua Gel Button Gradients */
+  --aqua-btn-blue: linear-gradient(180deg, #a3d5ff 0%, #3b9bff 48%, #1472e6 50%, #68b5ff 100%);
+  --aqua-btn-blue-hover: linear-gradient(180deg, #bfe3ff 0%, #52a8ff 48%, #2080f5 50%, #85c4ff 100%);
+  --aqua-btn-metal: linear-gradient(180deg, #ffffff 0%, #e1e6ed 48%, #cbd3de 50%, #f0f4f8 100%);
+  --aqua-btn-metal-hover: linear-gradient(180deg, #ffffff 0%, #ebf0f7 48%, #d9e1ec 50%, #f7fafc 100%);
+
+  --text-main: #1f252e;
+  --text-dim: #5a6575;
+  --text-bright: #000000;
+  --accent-blue: #1677ed;
+
+  --font-ui: -apple-system, BlinkMacSystemFont, "Lucida Grande", "Segoe UI", Roboto, sans-serif;
+  --font-mono: "SF Mono", "Menlo", "Courier New", monospace;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+body {
+  background-color: var(--aqua-bg);
+  color: var(--text-main);
+  font-family: var(--font-ui);
+  font-size: 12px;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mac OS X Window Title Bar (Pinstripe + Traffic Lights) */
+.kpt-header {
+  background: var(--aqua-metal);
+  background-image: var(--pinstripe), var(--aqua-metal);
+  border-bottom: 1px solid #99a2b0;
+  padding: 6px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  height: 38px;
+}
+
+.macosx-traffic-lights {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.traffic-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.8), 0 1px 2px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(0, 0, 0, 0.25);
+}
+
+.traffic-dot.close { background: radial-gradient(circle at 35% 35%, #ff7b73, #ff4d42); }
+.traffic-dot.minimize { background: radial-gradient(circle at 35% 35%, #ffc743, #e0a100); }
+.traffic-dot.zoom { background: radial-gradient(circle at 35% 35%, #35d848, #18b72a); }
+
+.kpt-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kpt-logo-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #389dff, #005bbd);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.8), 0 1px 4px rgba(0, 0, 0, 0.3);
+  border: 1px solid #004085;
+}
+
+.kpt-logo-title {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #1a202c;
+}
+
+.kpt-logo-subtitle {
+  font-size: 10px;
+  color: #4a5568;
+  font-weight: 600;
+}
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.led-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #4a5568;
+}
+
+.led-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #a0aec0;
+  box-shadow: inset 0 1px 1px rgba(0,0,0,0.4);
+}
+
+.led-dot.active-cyan { background: #00a8ff; box-shadow: 0 0 6px #00a8ff; }
+.led-dot.active-emerald { background: #10b981; box-shadow: 0 0 6px #10b981; }
+.led-dot.active-amber { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+
+/* Workspace Container */
+.kpt-workspace {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  background: #cbd2dc;
+}
+
+/* Sidebar Panels (Mac OS X Brushed Metal) */
+.kpt-panel {
+  width: 310px;
+  background: var(--panel-bg);
+  background-image: var(--pinstripe), linear-gradient(180deg, #eaedf2 0%, #d5dce5 100%);
+  border-right: 1px solid var(--panel-border);
+  display: flex;
+  flex-direction: column;
+  box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.6);
+  z-index: 5;
+  overflow-y: auto;
+}
+
+.kpt-panel.panel-right {
+  border-right: none;
+  border-left: 1px solid var(--panel-border);
+  box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.6);
+}
+
+.panel-section {
+  border-bottom: 1px solid #b5bdca;
+  padding: 12px;
+}
+
+.panel-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: #334155;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  padding-bottom: 4px;
+}
+
+.panel-title span.badge {
+  font-size: 9px;
+  padding: 1px 6px;
+  border-radius: 8px;
+  background: #3b82f6;
+  color: #ffffff;
+  font-weight: 800;
+}
+
+/* Mac OS X Aqua Gel Buttons */
+.metal-btn {
+  background: var(--aqua-btn-metal);
+  border: 1px solid #8e99a8;
+  border-radius: 12px;
+  color: #1e293b;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  transition: all 0.1s ease;
+}
+
+.metal-btn:hover {
+  background: var(--aqua-btn-metal-hover);
+  border-color: #64748b;
+}
+
+.metal-btn:active, .metal-btn.active {
+  background: var(--aqua-btn-blue);
+  color: #ffffff;
+  border-color: #0c57b9;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.metal-btn.btn-primary {
+  background: var(--aqua-btn-blue);
+  color: #ffffff;
+  border-color: #0f5bb8;
+  box-shadow: 0 1px 3px rgba(16, 88, 186, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.metal-btn.btn-primary:hover {
+  background: var(--aqua-btn-blue-hover);
+}
+
+.metal-btn.btn-amber {
+  background: linear-gradient(180deg, #ffdf8d 0%, #f59e0b 48%, #d97706 50%, #fbbf24 100%);
+  color: #ffffff;
+  border-color: #b45309;
+}
+
+.btn-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+/* Sliders & Controls */
+.control-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+
+.control-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #475569;
+  font-weight: 600;
+}
+
+.control-label .val {
+  color: #0284c7;
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+input[type="range"].metal-range {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: #cbd5e1;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  outline: none;
+}
+
+input[type="range"].metal-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #ffffff, #94a3b8);
+  border: 1px solid #64748b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+}
+
+input[type="range"].metal-range::-webkit-slider-thumb:hover {
+  background: radial-gradient(circle at 35% 35%, #ffffff, #3b82f6);
+  border-color: #1d4ed8;
+}
+
+/* Mac OS X Trackball Orbs */
+.trackball-container {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 10px 0;
+}
+
+.trackball-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.trackball-orb {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #e2e8f0, #94a3b8 70%, #475569 100%);
+  border: 2px solid #cbd5e1;
+  box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.4), 0 3px 8px rgba(0, 0, 0, 0.25);
+  position: relative;
+  cursor: grab;
+  overflow: hidden;
+}
+
+.trackball-orb:hover {
+  border-color: #3b82f6;
+}
+
+.trackball-orb:active {
+  cursor: grabbing;
+}
+
+.orb-grid {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border-radius: 50%;
+  background-image: 
+    radial-gradient(circle at 50% 50%, transparent 45%, rgba(14, 165, 233, 0.3) 46%, transparent 47%),
+    linear-gradient(0deg, transparent 48%, rgba(14, 165, 233, 0.35) 50%, transparent 52%),
+    linear-gradient(90deg, transparent 48%, rgba(14, 165, 233, 0.35) 50%, transparent 52%);
+  pointer-events: none;
+}
+
+.orb-handle {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #60a5fa, #1d4ed8);
+  box-shadow: 0 0 6px rgba(37, 99, 235, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.8);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.orb-handle.sun-handle {
+  background: radial-gradient(circle at 35% 35%, #fde047, #d97706);
+  box-shadow: 0 0 8px rgba(245, 158, 11, 0.8), inset 0 1px 1px rgba(255, 255, 255, 0.8);
+}
+
+.trackball-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #475569;
+  letter-spacing: 0.5px;
+}
+
+/* Center Viewport Container */
+.viewport-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: #0f172a;
+  position: relative;
+}
+
+.viewport-canvas-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #090d16;
+}
+
+canvas#renderCanvas {
+  max-width: 100%;
+  max-height: 100%;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  background: #000000;
+  display: block;
+}
+
+.scanline-overlay {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
+  background-size: 100% 4px;
+  opacity: 0.1;
+}
+
+/* Mac OS X HUD Palette */
+.viewport-hud {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  padding: 6px 14px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #0f172a;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  z-index: 5;
+}
+
+.hud-item {
+  display: flex;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.hud-item .lbl {
+  color: #64748b;
+  font-weight: 600;
+}
+
+/* Status Bar */
+.render-status-bar {
+  background: var(--aqua-metal);
+  background-image: var(--pinstripe), var(--aqua-metal);
+  border-top: 1px solid #94a3b8;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 11px;
+}
+
+.progress-track {
+  flex: 1;
+  height: 10px;
+  background: #cbd5e1;
+  border-radius: 5px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #3b82f6, #0284c7);
+  box-shadow: 0 0 6px rgba(2, 132, 199, 0.6);
+  transition: width 0.1s linear;
+}
+
+.progress-text {
+  font-family: var(--font-mono);
+  color: #334155;
+  font-weight: 700;
+  min-width: 200px;
+  text-align: right;
+}
+
+/* Select Dropdown styling */
+select.metal-select {
+  background: var(--aqua-btn-metal);
+  border: 1px solid #8e99a8;
+  color: #1e293b;
+  padding: 5px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+select.metal-select:hover {
+  background: var(--aqua-btn-metal-hover);
+}
