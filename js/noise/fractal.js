@@ -1,6 +1,6 @@
 /**
  * KPT Bryce 1.0 Procedural Noise & Heightfield Generator
- * Optimized for 16-bit High-Precision Smooth Texture Uploads (65,536 height steps).
+ * Includes Gaussian Heightmap Smoothing Filter (just like original KPT Bryce Terrain Editor).
  */
 
 export class FractalGenerator {
@@ -86,7 +86,7 @@ export class FractalGenerator {
     );
   }
 
-  fBm(x, z, octaves = 6, lacunarity = 2.0, gain = 0.5) {
+  fBm(x, z, octaves = 6, lacunarity = 2.0, gain = 0.48) {
     let total = 0;
     let frequency = 1.0;
     let amplitude = 1.0;
@@ -102,29 +102,75 @@ export class FractalGenerator {
     return total / maxVal;
   }
 
-  // Generate 16-bit Precision Heightmap Texture (Encoded into RG channels for 65,536 height steps)
-  generateHeightmapTexture(size = 512, octaves = 7, scale = 2.5, seedVal = 1337) {
+  // Gaussian Smoothing Pass (Original KPT Bryce Terrain Smoothing Filter)
+  applyGaussianSmoothing(heights, size, passes = 1) {
+    const temp = new Float32Array(size * size);
+    
+    for (let p = 0; p < passes; p++) {
+      // Horizontal Pass
+      for (let z = 0; z < size; z++) {
+        for (let x = 0; x < size; x++) {
+          let sum = 0;
+          let weightSum = 0;
+          for (let dx = -2; dx <= 2; dx++) {
+            const nx = Math.min(size - 1, Math.max(0, x + dx));
+            const w = dx === 0 ? 0.4 : (Math.abs(dx) === 1 ? 0.24 : 0.06);
+            sum += heights[z * size + nx] * w;
+            weightSum += w;
+          }
+          temp[z * size + x] = sum / weightSum;
+        }
+      }
+
+      // Vertical Pass
+      for (let z = 0; z < size; z++) {
+        for (let x = 0; x < size; x++) {
+          let sum = 0;
+          let weightSum = 0;
+          for (let dz = -2; dz <= 2; dz++) {
+            const nz = Math.min(size - 1, Math.max(0, z + dz));
+            const w = dz === 0 ? 0.4 : (Math.abs(dz) === 1 ? 0.24 : 0.06);
+            sum += temp[nz * size + x] * w;
+            weightSum += w;
+          }
+          heights[z * size + x] = sum / weightSum;
+        }
+      }
+    }
+  }
+
+  // Generate 16-bit High-Precision Heightmap Texture with KPT Bryce Gaussian Smoothing
+  generateHeightmapTexture(size = 512, octaves = 7, scale = 2.5, seedVal = 1337, smoothingAmount = 1.0) {
     this.seed(seedVal);
-    const data = new Uint8Array(size * size * 4);
+    const rawHeights = new Float32Array(size * size);
+
     for (let z = 0; z < size; z++) {
       for (let x = 0; x < size; x++) {
         const nx = (x / size - 0.5) * scale;
         const nz = (z / size - 0.5) * scale;
-        
         let h = this.fBm(nx, nz, octaves, 2.0, 0.48);
-        h = Math.min(1.0, Math.max(0.0, (h + 1.0) * 0.5));
-
-        // 16-bit quantization (0 to 65535)
-        const val16 = Math.floor(h * 65535);
-        const rHigh = Math.floor(val16 / 256);
-        const gLow  = val16 % 256;
-
-        const idx = (z * size + x) * 4;
-        data[idx]     = rHigh; // High byte
-        data[idx + 1] = gLow;  // Low byte
-        data[idx + 2] = 0;
-        data[idx + 3] = 255;
+        rawHeights[z * size + x] = Math.min(1.0, Math.max(0.0, (h + 1.0) * 0.5));
       }
+    }
+
+    // Apply Gaussian Smoothing passes based on smoothingAmount (0.0 = sharp, 3.0 = silky smooth)
+    const blurPasses = Math.round(smoothingAmount * 2);
+    if (blurPasses > 0) {
+      this.applyGaussianSmoothing(rawHeights, size, blurPasses);
+    }
+
+    const data = new Uint8Array(size * size * 4);
+    for (let i = 0; i < size * size; i++) {
+      const h = rawHeights[i];
+      const val16 = Math.floor(h * 65535);
+      const rHigh = Math.floor(val16 / 256);
+      const gLow  = val16 % 256;
+
+      const idx = i * 4;
+      data[idx]     = rHigh;
+      data[idx + 1] = gLow;
+      data[idx + 2] = 0;
+      data[idx + 3] = 255;
     }
     return { data, size };
   }

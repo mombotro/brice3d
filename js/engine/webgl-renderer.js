@@ -53,7 +53,7 @@ export class WebGLRenderer {
       terrainHeight: 3.2,
       octaves: 7,
       meshQuality: 1.0,
-      meshSmoothing: 1.0, // Mesh smoothing factor (0.1 to 3.0)
+      meshSmoothing: 1.0,
       terrainDomainMode: 0,
       paletteMode: 0,
 
@@ -146,7 +146,9 @@ export class WebGLRenderer {
     const texSize = 512;
     const octs = Math.min(8, Math.max(4, Math.floor(this.state.octaves * this.state.meshQuality)));
 
-    const { data, size } = this.fractalGen.generateHeightmapTexture(texSize, octs, 2.5, this.state.seed);
+    const { data, size } = this.fractalGen.generateHeightmapTexture(
+      texSize, octs, 2.5, this.state.seed, this.state.meshSmoothing
+    );
 
     if (this.heightTexture) gl.deleteTexture(this.heightTexture);
 

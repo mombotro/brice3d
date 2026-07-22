@@ -1,6 +1,6 @@
 /**
  * KPT Bryce 1.0 Tactile UI Manager
- * Handles 3D Trackballs, Color Combos, Terrain Domain, Seed Generation, Mesh Detail & Smoothing, and Render Scaling.
+ * Handles 3D Trackballs, Color Combos, Terrain Domain, Seed Generation, Mesh Detail & Gaussian Smoothing, and Render Scaling.
  */
 
 export class KptUIManager {
@@ -189,6 +189,7 @@ export class KptUIManager {
         const val = parseFloat(e.target.value);
         this.renderer.state.meshSmoothing = val;
         if (valMeshSmoothing) valMeshSmoothing.textContent = val.toFixed(2);
+        this.renderer.regenerateHeightmap();
         if (this.onStateChange) this.onStateChange();
       });
     }
